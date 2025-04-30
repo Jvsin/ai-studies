@@ -1,0 +1,6 @@
+*.zip
+*.docx
+/amum2025/.ipynb_checkpoints
+/swad2025/.ipynb_checkpoints
+**/.ipynb_checkpoints/
+*.7z
