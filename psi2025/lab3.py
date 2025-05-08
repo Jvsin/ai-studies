@@ -176,8 +176,8 @@ def heuristic_admissible(matrix, city, unvisited):
         for j in unvisited:
             if matrix[i][j] != -1 and i != j:
                 min_edge = min(min_edge, matrix[i][j])
-        # if matrix[i][0] != -1 and i != 0:
-        #     min_edge = min(min_edge, matrix[i][0])
+        if matrix[i][0] != -1 and i != 0:
+            min_edge = min(min_edge, matrix[i][0])
     # print(min_edge)
     return min_edge * remain_steps if min_edge != float('inf') else float('inf')
 
@@ -234,7 +234,7 @@ def astar_tsp(matrix, heuristic_func, start=0):
 
 
 if __name__ == "__main__":
-    cities = random_cities(5)
+    cities = random_cities(10)
     cities_matrix = count_distances(cities)
     print(print_distance_matrix(cities_matrix))
     print(create_tree_graph(cities_matrix))

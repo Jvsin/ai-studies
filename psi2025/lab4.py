@@ -144,7 +144,7 @@ def aco_tsp(cities_matrix, n_ants, n_iterations, alpha=1, beta=2, rho=0.5, Q=100
                 probs = []
                 for v in unvisited:
                     cost = cities_matrix[current_city][v]
-                    prob = (pheromones[current_city][v] ** alpha) * ((1 / cost) ** beta)
+                    prob = (pheromones[current_city][v] ** alpha) * ((1 / cost) ** beta) # alpha - wpływ fermonów, beta - wpływ odległosci
                     probs.append(prob)
                 if sum(probs) == 0:
                     break
@@ -162,10 +162,10 @@ def aco_tsp(cities_matrix, n_ants, n_iterations, alpha=1, beta=2, rho=0.5, Q=100
                     tours.append(tour)
                     costs.append(final_cost)
 
-        pheromones *= rho
+        pheromones *= rho #stopień "parowania" fermonów 
         for tour, cost in zip(tours, costs):
             for i in range(n):
-                pheromones[tour[i]][tour[i + 1]] += Q / cost
+                pheromones[tour[i]][tour[i + 1]] += Q / cost # rozkładamy fermony
 
     return best_tour, best_cost, best_tour[0]
 
@@ -193,5 +193,6 @@ if __name__ == "__main__":
     print(f"\nDFS tree result: {path_dfs, cost_dfs}")
     end = time.time()
     print(f"Execution time: {(end - start):.10f}")
+    
 
 
