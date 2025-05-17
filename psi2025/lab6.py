@@ -1,10 +1,23 @@
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.optimize import minimize
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 def function(x, y):
     return (1.5 - x - x*y)**2 + (2.25 - x + x*y**2)**2 + (2.625 - x + x*y**3)**2
+
+## min funkcji to około (2.51799, -0.37463) i warttość funkcji to około 0.0135145 
+def numpy_min():
+    def func(vars):
+        x, y = vars
+        return (1.5 - x - x*y)**2 + (2.25 - x + x*y**2)**2 + (2.625 - x + x*y**3)**2
+    
+    bounds = [(-4.5, 4.5), (-4.5, 4.5)]
+    x0 = [0.0, 0.0]
+    result = minimize(func, x0, bounds=bounds)
+    return result.x, result.fun
 
 class Particle:
     def __init__(self, x, y, w, c1, c2):
@@ -12,22 +25,24 @@ class Particle:
         self.v = np.random.rand(2) * 0.1
         self.best_position = self.position.copy()
         self.best_value = function(x, y)
-        self.w = w
+        self.last_v = w
         self.c1 = c1
         self.c2 = c2
 
     def update_velocity(self, global_best_position):
+        own_component = self.c1 * (self.position - self.best_position)
+        global_component = self.c2 * (self.position - global_best_position)
 
-        r1 = np.random.rand(2)
-        r2 = np.random.rand(2)
-
-        own_component = self.c1 * r1 * (self.position - self.best_position)
-        global_component = self.c2 * r2 * (self.position - global_best_position)
-
-        self.velocity = self.w * self.v + own_component + global_component
+        self.velocity = self.last_v * self.v + own_component + global_component
 
     def update_position(self):
-        self.position += self.v
+        new_position = self.position + self.v
+        if new_position[0] < -4.5 or new_position[0] > 4.5:
+            self.v[0] = -self.v[0]
+        if new_position[1] < -4.5 or new_position[1] > 4.5:
+            self.v[1] = -self.v[1]
+        
+        self.position = new_position
 
         position_value = function(self.position[0], self.position[1])
         if position_value < self.best_value:
@@ -35,12 +50,12 @@ class Particle:
             self.best_position = self.position.copy()
 
 
-def pso(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
+def pso_algorithm(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
     min_history = []
     particles = [Particle(random.uniform(size[0], size[1]), random.uniform(size[0], size[1]),
                           w, c1, c2) for _ in range(num_particles)]
-    global_best_position = np.array([0, 0])
-    global_best_value = np.array([float("inf")])
+    global_best_position = particles[0].best_position
+    global_best_value = function(global_best_position[0], global_best_position[1])
 
     for _ in range(max_iter):
         for particle in particles:
@@ -52,30 +67,46 @@ def pso(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
                 global_best_value = particle.best_value
                 global_best_position = particle.best_position
 
+    # for particle in particles:
+    #     print(f"Particle Position: {particle.position}, Value: {particle.best_value}")
+
     return global_best_position, global_best_value, min_history
 
-# print(pso(30, 1000))
+if __name__ == "__main__":
+    configs = [
+        {"w": 0.5, "c1": 1.0, "c2": 2.0}, ## najlepszy w grupie
+        {"w": 0.5, "c1": 2.0, "c2": 2.0}, ## równe 
+        {"w": 0.5, "c1": 2.0, "c2": 1.0}, ## najlepszy indywidualnie
+    ]
 
-configs = [
-    {"w": 0.5, "c1": 1.5, "c2": 1.5},
-    {"w": 0.7, "c1": 2.0, "c2": 2.0},
-    {"w": 0.9, "c1": 2.5, "c2": 0.5},
-]
+    res_x, res_y = numpy_min()
+    print(f"Optymalne rozwiązanie z użyciem scipy: x={res_x}, y={res_y:.6f}")
+    print(70*"-")
 
-for config in configs:
-    best_pos, best_val, min_history = pso(
-        num_particles=30,
-        max_iter=1000,
-        w=config["w"],
-        c1=config["c1"],
-        c2=config["c2"]
-    )
-    print(f"Config {config} => Best Pos: {best_pos}, Best Val: {best_val:.6f}")
-    plt.plot(min_history, label=f"w={config['w']}, c1={config['c1']}, c2={config['c2']}")
+    max_iter = 0
+    y_lim = 0
+    for config in configs:
+        best_pos, best_val, min_history = pso_algorithm(
+            num_particles=30,
+            max_iter=1000,
+            w=config["w"],
+            c1=config["c1"],
+            c2=config["c2"]
+        )
+        if len(min_history) > max_iter:
+            max_iter = len(min_history)
+        if max(min_history) > y_lim:
+            y_lim = max(min_history)
 
-plt.title("Convergence of PSO with Different Parameters")
-plt.xlabel("Iteration")
-plt.ylabel("Best Fitness Value")
-plt.legend()
-plt.grid()
-plt.show()
+        print(f"Różnica między najlepszym rozwiązaniem a PSO: {abs(best_val - res_y):.6f}")
+        print(f"Config {config} => [X, Y]: {best_pos}, Minimum: {best_val:.6f}\n")
+        plt.plot(min_history, label=f"w={config['w']}, c1={config['c1']}, c2={config['c2']}")
+
+    plt.title("PSO dla różnych parametrów")
+    plt.xlabel("liczba iteracji")
+    plt.ylabel("najlepsza wartość")
+    plt.ylim(0, y_lim)
+    plt.xlim(0, max_iter)
+    plt.legend()
+    plt.grid()
+    plt.show()
