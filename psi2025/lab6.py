@@ -25,15 +25,22 @@ class Particle:
         self.v = np.random.rand(2) * 0.1
         self.best_position = self.position.copy()
         self.best_value = function(x, y)
-        self.last_v = w
+        self.w = w
         self.c1 = c1
         self.c2 = c2
 
-    def update_velocity(self, global_best_position):
-        own_component = self.c1 * (self.position - self.best_position)
-        global_component = self.c2 * (self.position - global_best_position)
+    def update_velocity(self, global_best_position, current_w):
+        r1 = np.random.rand(2)
+        r2 = np.random.rand(2)
 
-        self.velocity = self.last_v * self.v + own_component + global_component
+        # own_component = self.c1 * r1 * (self.position - self.best_position)
+        # global_component = self.c2 * r2 * (self.position - global_best_position)
+        own_component = self.c1 * r1 * (self.best_position - self.position)
+        global_component = self.c2 * r2 * (global_best_position - self.position)
+
+        self.v = current_w * self.v + own_component + global_component
+        self.v = np.clip(self.v, -1, 1)
+
 
     def update_position(self):
         new_position = self.position + self.v
@@ -51,15 +58,19 @@ class Particle:
 
 
 def pso_algorithm(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
+    def actualize_w(iteration, max_iterations, w_max=1.0, w_min=0.1):
+        return w_max - ((w_max - w_min) * (iteration / max_iterations))
+    
     min_history = []
     particles = [Particle(random.uniform(size[0], size[1]), random.uniform(size[0], size[1]),
                           w, c1, c2) for _ in range(num_particles)]
     global_best_position = particles[0].best_position
     global_best_value = function(global_best_position[0], global_best_position[1])
 
-    for _ in range(max_iter):
+    for iter in range(max_iter):
+        current_w = actualize_w(iter, max_iter, w_max=w, w_min=0.1)
         for particle in particles:
-            particle.update_velocity(global_best_position)
+            particle.update_velocity(global_best_position, current_w)
             particle.update_position()
 
             if particle.best_value < global_best_value:
@@ -74,9 +85,9 @@ def pso_algorithm(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
 
 if __name__ == "__main__":
     configs = [
-        {"w": 0.5, "c1": 1.0, "c2": 2.0}, ## najlepszy w grupie
-        {"w": 0.5, "c1": 2.0, "c2": 2.0}, ## równe 
-        {"w": 0.5, "c1": 2.0, "c2": 1.0}, ## najlepszy indywidualnie
+        {"w": 1.0, "c1": 1.0, "c2": 2.0}, ## najlepszy w grupie
+        {"w": 1.0, "c1": 2.0, "c2": 2.0}, ## równe 
+        {"w": 1.0, "c1": 2.0, "c2": 1.0}, ## najlepszy indywidualnie
     ]
 
     res_x, res_y = numpy_min()
@@ -88,7 +99,7 @@ if __name__ == "__main__":
     for config in configs:
         best_pos, best_val, min_history = pso_algorithm(
             num_particles=30,
-            max_iter=1000,
+            max_iter=100,
             w=config["w"],
             c1=config["c1"],
             c2=config["c2"]
