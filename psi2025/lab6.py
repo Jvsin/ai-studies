@@ -61,6 +61,8 @@ def pso_algorithm(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
     def actualize_w(iteration, max_iterations, w_max=1.0, w_min=0.1):
         return w_max - ((w_max - w_min) * (iteration / max_iterations))
     
+    optimal_result = numpy_min()
+    
     min_history = []
     particles = [Particle(random.uniform(size[0], size[1]), random.uniform(size[0], size[1]),
                           w, c1, c2) for _ in range(num_particles)]
@@ -77,11 +79,13 @@ def pso_algorithm(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
                 min_history.append(particle.best_value)
                 global_best_value = particle.best_value
                 global_best_position = particle.best_position
-
+        
+        if global_best_value < optimal_result[1]:
+            break
     # for particle in particles:
     #     print(f"Particle Position: {particle.position}, Value: {particle.best_value}")
 
-    return global_best_position, global_best_value, min_history
+    return global_best_position, global_best_value, min_history, iter
 
 if __name__ == "__main__":
     configs = [
@@ -97,7 +101,7 @@ if __name__ == "__main__":
     max_iter = 0
     y_lim = 0
     for config in configs:
-        best_pos, best_val, min_history = pso_algorithm(
+        best_pos, best_val, min_history, iters = pso_algorithm(
             num_particles=30,
             max_iter=100,
             w=config["w"],
@@ -110,7 +114,7 @@ if __name__ == "__main__":
             y_lim = max(min_history)
 
         print(f"Różnica między najlepszym rozwiązaniem a PSO: {abs(best_val - res_y):.6f}")
-        print(f"Config {config} => [X, Y]: {best_pos}, Minimum: {best_val:.6f}\n")
+        print(f"Config {config} => [X, Y]: {best_pos}, Minimum: {best_val:.6f} po {iters} iteracjach\n")
         plt.plot(min_history, label=f"w={config['w']}, c1={config['c1']}, c2={config['c2']}")
 
     plt.title("PSO dla różnych parametrów")
