@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 import sys
+import seaborn as sns
+import pandas as pd
 sys.stdout.reconfigure(encoding='utf-8')
 
 def function(x, y):
@@ -33,8 +35,6 @@ class Particle:
         r1 = np.random.rand(2)
         r2 = np.random.rand(2)
 
-        # own_component = self.c1 * r1 * (self.position - self.best_position)
-        # global_component = self.c2 * r2 * (self.position - global_best_position)
         own_component = self.c1 * r1 * (self.best_position - self.position)
         global_component = self.c2 * r2 * (global_best_position - self.position)
 
@@ -80,7 +80,7 @@ def pso_algorithm(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
                 global_best_value = particle.best_value
                 global_best_position = particle.best_position
         
-        if global_best_value < optimal_result[1]:
+        if abs(global_best_value - optimal_result[1]) < 1e-8:
             break
     # for particle in particles:
     #     print(f"Particle Position: {particle.position}, Value: {particle.best_value}")
@@ -88,40 +88,57 @@ def pso_algorithm(num_particles, max_iter, w, c1, c2, size=[-4.5, 4.5]):
     return global_best_position, global_best_value, min_history, iter
 
 if __name__ == "__main__":
-    configs = [
-        {"w": 1.0, "c1": 1.0, "c2": 2.0}, ## najlepszy w grupie
-        {"w": 1.0, "c1": 2.0, "c2": 2.0}, ## równe 
-        {"w": 1.0, "c1": 2.0, "c2": 1.0}, ## najlepszy indywidualnie
-    ]
+
+    ITERATIONS = 50
+    NUM_PARTICLES = 20
 
     res_x, res_y = numpy_min()
     print(f"Optymalne rozwiązanie z użyciem scipy: x={res_x}, y={res_y:.6f}")
     print(70*"-")
 
-    max_iter = 0
-    y_lim = 0
-    for config in configs:
-        best_pos, best_val, min_history, iters = pso_algorithm(
-            num_particles=30,
-            max_iter=100,
-            w=config["w"],
-            c1=config["c1"],
-            c2=config["c2"]
-        )
-        if len(min_history) > max_iter:
-            max_iter = len(min_history)
-        if max(min_history) > y_lim:
-            y_lim = max(min_history)
+    results = []
+    c1_values = np.arange(0.5, 2.6, 0.5)
+    c2_values = np.arange(0.5, 2.6, 0.5)
+    for c1 in c1_values:
+        for c2 in c2_values:
+            best_pos, best_val, min_history, iters = pso_algorithm(
+                num_particles=NUM_PARTICLES,
+                max_iter=ITERATIONS,
+                w=1.0,
+                c1=c1,
+                c2=c2
+            )
+            results.append({
+                'c1': c1,
+                'c2': c2,
+                'value': best_val,
+                'position': best_pos,
+                'iterations': iters
+            })
 
-        print(f"Różnica między najlepszym rozwiązaniem a PSO: {abs(best_val - res_y):.6f}")
-        print(f"Config {config} => [X, Y]: {best_pos}, Minimum: {best_val:.6f} po {iters} iteracjach\n")
-        plt.plot(min_history, label=f"w={config['w']}, c1={config['c1']}, c2={config['c2']}")
+    results = sorted(results, key=lambda x: x['iterations'])
+    for res in results:
+        abs_diff = abs(res['value'] - res_y)
+        res['abs_diff'] = abs_diff
+        print(f"c1 = {res['c1']:.2f}, c2 = {res['c2']:.2f} => Minimum = {res['value']:.6f} dla [X, Y] = {res['position']}, po {res['iterations']} iteracjach. Błąd abs = {abs_diff:.8f}")
 
-    plt.title("PSO dla różnych parametrów")
-    plt.xlabel("liczba iteracji")
-    plt.ylabel("najlepsza wartość")
-    plt.ylim(0, y_lim)
-    plt.xlim(0, max_iter)
-    plt.legend()
-    plt.grid()
-    plt.show()
+    df = pd.DataFrame(results)
+    heatmap_data = df.pivot(index='c1', columns='c2', values='abs_diff')
+    sns.heatmap(heatmap_data, annot=True, fmt=".5f", cmap="viridis")
+    plt.title(f"PSO dla {ITERATIONS} iteracji i {NUM_PARTICLES} cząsteczek")
+    plt.xlabel("c2")
+    plt.ylabel("c1")
+    plt.show()    
+
+        # print(f"Różnica między najlepszym rozwiązaniem a PSO: {abs(best_val - res_y):.6f}")
+        # print(f"Config {config} => [X, Y]: {best_pos}, Minimum: {best_val:.6f} po {iters} iteracjach\n")
+        # plt.plot(min_history, label=f"w={config['w']}, c1={config['c1']}, c2={config['c2']}")
+
+    # plt.title("PSO dla różnych parametrów")
+    # plt.xlabel("liczba iteracji")
+    # plt.ylabel("najlepsza wartość")
+    # plt.ylim(0, y_lim)
+    # plt.xlim(0, max_iter)
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
