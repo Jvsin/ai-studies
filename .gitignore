@@ -11,3 +11,8 @@
 /psi2025/lab8/.dll
 /psi2025/lab8/.pyc
 *.pyc
+DLF_winter_2025_shared/datasets
+*.jpg
+*.png
+*.jpeg
+*.gif
