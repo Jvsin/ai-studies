@@ -1,6 +1,15 @@
 import os
 import time
-import pickle
+import random
+
+# Sprobuj uzyc dill (obsługuje lambdy), jesli nie ma to pickle
+try:
+    import dill as pickle
+    print("[OK] Uzywam dill - obsluga lambd")
+except ImportError:
+    import pickle
+    print("[!] Uzywam pickle - jesli blad, zainstaluj: pip install dill")
+
 from treasure_env import MultiTreasureHunterMDP, LEFT, DOWN, RIGHT, UP
 
 def clear_console():
@@ -157,7 +166,7 @@ if __name__ == "__main__":
     print("TREASURE HUNTER - Test Wytrenowanych Agentow".center(60))
     print("=" * 60)
     print("\nWybierz tryb:")
-    print("1. Zaladuj wytrenowanych agentow z plikow (agent1.pkl, agent2.pkl)")
+    print("1. Zaladuj wytrenowanych agentow z plikow .pkl")
     print("2. Stworz nowych agentow (bez treningu - losowe ruchy)")
     
     choice = input("\nWybor (1/2): ").strip()
@@ -166,15 +175,65 @@ if __name__ == "__main__":
     env = MultiTreasureHunterMDP(MAP2)
     
     if choice == "1":
+        # Znajdź wszystkie pliki .pkl w bieżącym katalogu
+        current_dir = os.path.dirname(os.path.abspath(__file__)) or '.'
+        pkl_files = [f for f in os.listdir(current_dir) if f.endswith('.pkl')]
+        
+        if not pkl_files:
+            print("\n[X] Nie znaleziono zadnych plikow .pkl w folderze!")
+            print(f"Folder: {current_dir}")
+            print("\nUruchom najpierw trening w notebooku i zapisz agentow!")
+            exit(1)
+        
+        # Wyświetl dostępne pliki
+        print(f"\nZnaleziono {len(pkl_files)} plikow .pkl:")
+        for idx, fname in enumerate(pkl_files, 1):
+            print(f"  {idx}. {fname}")
+        
+        # Wybór pierwszego agenta
+        print("\nWybierz PIERWSZEGO agenta:")
+        while True:
+            try:
+                idx1 = int(input(f"Numer (1-{len(pkl_files)}): "))
+                if 1 <= idx1 <= len(pkl_files):
+                    agent1_file = pkl_files[idx1 - 1]
+                    break
+                print(f"Podaj liczbe od 1 do {len(pkl_files)}")
+            except ValueError:
+                print("Podaj poprawny numer!")
+        
+        # Wybór drugiego agenta
+        print("\nWybierz DRUGIEGO agenta:")
+        while True:
+            try:
+                idx2 = int(input(f"Numer (1-{len(pkl_files)}): "))
+                if 1 <= idx2 <= len(pkl_files):
+                    agent2_file = pkl_files[idx2 - 1]
+                    break
+                print(f"Podaj liczbe od 1 do {len(pkl_files)}")
+            except ValueError:
+                print("Podaj poprawny numer!")
+        
+        # Ładuj agentów
         try:
-            print("\n[>] Ladowanie agentow...")
-            agent1, agent2 = load_agents('agent1.pkl', 'agent2.pkl')
-            print("[OK] Agenci zaladowani!")
-        except FileNotFoundError:
-            print("[X] Blad: Nie znaleziono plikow agent1.pkl lub agent2.pkl")
-            print("Uruchom najpierw trening w notebooku i zapisz agentow:")
-            print("  with open('agent1.pkl', 'wb') as f: pickle.dump(agent1, f)")
-            print("  with open('agent2.pkl', 'wb') as f: pickle.dump(agent2, f)")
+            agent1_path = os.path.join(current_dir, agent1_file)
+            agent2_path = os.path.join(current_dir, agent2_file)
+            
+            print(f"\n[>] Ladowanie agentow:")
+            print(f"    Agent 1: {agent1_file}")
+            print(f"    Agent 2: {agent2_file}")
+            
+            agent1, agent2 = load_agents(agent1_path, agent2_path)
+            
+            # WAZNE: Podmien get_legal_actions bo lambda odnosi sie do nieistniejacego env
+            agent1.get_legal_actions = lambda s: env.get_possible_actions(s)
+            agent2.get_legal_actions = lambda s: env.get_possible_actions(s)
+            
+            print("[OK] Agenci zaladowani i gotowi do gry!")
+            
+        except Exception as e:
+            print(f"\n[X] Blad podczas ladowania agentow: {e}")
+            print("Sprawdz czy pliki sa poprawne i zostaly zapisane przez dill/pickle")
             exit(1)
     else:
         # Importuj z agents.py
