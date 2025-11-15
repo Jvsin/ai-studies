@@ -161,6 +161,13 @@ if __name__ == "__main__":
         ".#..#..#..",
         "T........B"
     ]
+    MAP3 = [
+        "A....H...T",
+        ".#.#....#.",
+        ".H.#T..#H.",
+        "..#...H.#.",
+        "T...H....B"
+    ]
     
     print("=" * 60)
     print("TREASURE HUNTER - Test Wytrenowanych Agentow".center(60))
@@ -172,7 +179,7 @@ if __name__ == "__main__":
     choice = input("\nWybor (1/2): ").strip()
     
     # Stwórz środowisko
-    env = MultiTreasureHunterMDP(MAP2)
+    env = MultiTreasureHunterMDP(MAP3)
     
     if choice == "1":
         # Znajdź wszystkie pliki .pkl w bieżącym katalogu
@@ -226,8 +233,8 @@ if __name__ == "__main__":
             agent1, agent2 = load_agents(agent1_path, agent2_path)
             
             # WAZNE: Podmien get_legal_actions bo lambda odnosi sie do nieistniejacego env
-            agent1.get_legal_actions = lambda s: env.get_possible_actions(s)
-            agent2.get_legal_actions = lambda s: env.get_possible_actions(s)
+            agent1.get_legal_actions = lambda s: env.get_possible_actions(s, agent_id='1')
+            agent2.get_legal_actions = lambda s: env.get_possible_actions(s, agent_id='2')
             
             print("[OK] Agenci zaladowani i gotowi do gry!")
             
@@ -242,12 +249,12 @@ if __name__ == "__main__":
         print("\n[>] Tworzenie nowych agentow...")
         agent1 = SARSALambdaAgent(
             alpha=0.1, epsilon=0.25, discount=0.99,
-            get_legal_actions=lambda s: env.get_possible_actions(s),
+            get_legal_actions=lambda s: env.get_possible_actions(s, agent_id='1'),
             lambda_value=0.9
         )
         agent2 = DQLearningAgent(
             alpha=0.1, epsilon=0.25, discount=0.99,
-            get_legal_actions=lambda s: env.get_possible_actions(s)
+            get_legal_actions=lambda s: env.get_possible_actions(s, agent_id='2')
         )
         print("[OK] Agenci utworzeni (niewtrenowani - beda robic losowe ruchy)")
     

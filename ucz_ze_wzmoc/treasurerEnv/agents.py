@@ -555,9 +555,9 @@ class SARSALambdaAgent:
         epsilon = self.epsilon
 
         p = random.uniform(0, 1)
-        if 1 - epsilon < p:
+        if p < epsilon:  # eksploracja z prawdopodobieństwem epsilon
             chosen_action = random.choice(possible_actions)
-        else:
+        else:  # eksploatacja (najlepsza akcja) z prawdopodobieństwem 1-epsilon
             chosen_action = self.get_best_action(state)    
 
         return chosen_action
@@ -646,6 +646,8 @@ class DQLearningAgent:
             
             res = learning_rate * (reward + gamma * next_qvalue - self._qvaluesB[state][action])
             self._qvaluesB[state][action] += res
+        
+        return self.get_best_action(next_state)
 
 
     def get_action(self, state):
@@ -670,9 +672,9 @@ class DQLearningAgent:
         epsilon = self.epsilon
 
         p = random.uniform(0, 1)
-        if 1 - epsilon < p: #randomowa akcja z prawdopodobienstwem epsilon (eksploracja)
+        if p < epsilon:  # eksploracja z prawdopodobieństwem epsilon
             chosen_action = random.choice(possible_actions)
-        else: # najlepsza akcja z prawdopodobienstwem 1-epsilon (eksploatacja)
+        else:  # eksploatacja (najlepsza akcja) z prawdopodobieństwem 1-epsilon
             chosen_action = self.get_best_action(state)        
 
         return chosen_action

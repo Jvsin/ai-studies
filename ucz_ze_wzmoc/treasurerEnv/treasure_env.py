@@ -46,26 +46,26 @@ class MultiTreasureHunterMDP:
             self.agent_holding['2']
         )
 
-    def get_possible_actions(self, state=None):
+    def get_possible_actions(self, state=None, agent_id='1'):
+        """Zwraca możliwe akcje dla konkretnego agenta"""
         if state is None:
             return [LEFT, DOWN, RIGHT, UP]
         
         pos1, pos2, _, _, _ = state
+        # Wybierz pozycję odpowiedniego agenta
+        agent_pos = pos1 if agent_id == '1' else pos2
+        x, y = agent_pos
         
-        possible_actions = set()
-        for agent_pos in [pos1, pos2]:
-            x, y = agent_pos
+        possible_actions = []
+        for action in [LEFT, DOWN, RIGHT, UP]:
+            _x, _y = ACTIONS[action]
+            new_x, new_y = x + _x, y + _y
             
-            for action in [LEFT, DOWN, RIGHT, UP]:
-                _x, _y = ACTIONS[action]
-                new_x, new_y = x + _x, y + _y
-                
-                if 0 <= new_x < self.width and 0 <= new_y < self.height:
-                    if self.map[new_y][new_x] != '#':
-                        possible_actions.add(action)
+            if 0 <= new_x < self.width and 0 <= new_y < self.height:
+                if self.map[new_y][new_x] != '#':
+                    possible_actions.append(action)
         
-        # return list(possible_actions) if possible_actions else [LEFT, DOWN, RIGHT, UP]
-        return list(possible_actions)
+        return possible_actions
 
     def _move(self, agent_id, action):
         x, y = self.agent_pos[agent_id]
@@ -154,6 +154,7 @@ class MultiTreasureHunterMDP:
     def _is_done(self):
         # check_trap1 = self.map[self.agent_pos['1'][1]][self.agent_pos['1'][0]] == 'H'
         # check_trap2 = self.map[self.agent_pos['2'][1]][self.agent_pos['2'][0]] == 'H'
+
         if self.agent_score['1'] == self.winning_score or self.agent_score['2'] == self.winning_score:
             return True
 
