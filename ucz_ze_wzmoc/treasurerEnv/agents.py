@@ -318,6 +318,9 @@ class ExpectedSARSAAgent:
         """ Sets the Qvalue for [state,action] to the given value """
         self._qvalues[state][action] = value
 
+    def reset(self):
+        pass
+
     #---------------------START OF YOUR CODE---------------------#
 
     def get_value(self, state):

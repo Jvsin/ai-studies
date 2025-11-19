@@ -52,7 +52,6 @@ class MultiTreasureHunterMDP:
             return [LEFT, DOWN, RIGHT, UP]
         
         pos1, pos2, _, _, _ = state
-        # Wybierz pozycję odpowiedniego agenta
         agent_pos = pos1 if agent_id == '1' else pos2
         x, y = agent_pos
         
@@ -87,7 +86,6 @@ class MultiTreasureHunterMDP:
         rewards = {'1': 0.0, '2': 0.0}
         info = {}
 
-        # Zapamiętaj poprzednie pozycje (przed ruchem)
         prev_pos1 = self.agent_pos['1']
         prev_pos2 = self.agent_pos['2']
 
@@ -96,11 +94,9 @@ class MultiTreasureHunterMDP:
         rewards['1'] -= 1
         rewards['2'] -= 1
 
-        # Sprawdź kolizję agentów
         if self.agent_pos['1'] == self.agent_pos['2']:
             collision_pos = self.agent_pos['1']
             
-            # Jeśli agenci niosą skarby, upuść je w miejscu kolizji
             if self.agent_holding['1']:
                 self.treasures.add(collision_pos)
                 self.agent_holding['1'] = False
@@ -111,11 +107,9 @@ class MultiTreasureHunterMDP:
                 self.agent_holding['2'] = False
                 info['2_drop_collision'] = True
             
-            # Cofnij obu agentów do ich baz
             self.agent_pos['1'] = self.bases['1']
             self.agent_pos['2'] = self.bases['2']
             
-            # Kara za kolizję
             # rewards['1'] -= 10
             # rewards['2'] -= 10
             info['collision'] = True
@@ -123,10 +117,8 @@ class MultiTreasureHunterMDP:
         for agent_id, pos, prev_pos in [('1', self.agent_pos['1'], prev_pos1), ('2', self.agent_pos['2'], prev_pos2)]:
             x, y = pos
 
-            # Pułapka - duża kara, upuść skarb obok pułapki (na poprzedniej pozycji) i wróć do bazy
             if self.map[y][x] == 'H':
                 if self.agent_holding[agent_id]:
-                    # Upuść skarb na ostatniej bezpiecznej pozycji (przed wpadnięciem)
                     self.treasures.add(prev_pos)
                     self.agent_holding[agent_id] = False
                     info[f'{agent_id}_drop_trap'] = True
