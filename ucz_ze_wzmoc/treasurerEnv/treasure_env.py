@@ -53,6 +53,14 @@ class MultiTreasureHunterMDP:
             self.agent_holding['1'],
             self.agent_holding['2']
         )
+    
+    def get_agent_state(self, state, agent_id):
+        pos1, pos2, treasures, hold1, hold2 = state
+        
+        if agent_id == '1':
+            return (pos1, pos2, treasures, hold1, hold2)
+        else:
+            return (pos2, pos1, treasures, hold2, hold1)
 
     def get_possible_actions(self, state=None, agent_id='1'):
         if state is None:
