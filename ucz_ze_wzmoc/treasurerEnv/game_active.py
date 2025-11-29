@@ -163,7 +163,6 @@ def test_policy_animated(env, agent1, agent2, episodes=3, delay=1.0, max_steps=1
         time.sleep(delay * 1.5)  # Dłuższa pauza na początku
         
         while step < max_steps:
-            # Przekształć stan dla każdego agenta
             if use_agent_perspective:
                 state1 = env.get_agent_state(state, '1')
                 state2 = env.get_agent_state(state, '2')
@@ -284,6 +283,8 @@ if __name__ == "__main__":
             
             agent1, agent2 = load_agents(agents_path)
             
+            # UWAGA: get_possible_actions oczekuje stanu z perspektywy agenta
+            # (po transformacji przez env.get_agent_state)
             agent1.get_legal_actions = lambda s: env.get_possible_actions(s, agent_id='1')
             agent2.get_legal_actions = lambda s: env.get_possible_actions(s, agent_id='2')
             
