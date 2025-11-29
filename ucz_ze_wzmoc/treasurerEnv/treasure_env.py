@@ -1,6 +1,14 @@
 LEFT, DOWN, RIGHT, UP = 0, 1, 2, 3
 ACTIONS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
+MAP3 = [
+    "A....H...T",
+    ".#.#....#.",
+    ".H.#T..#H.",
+    "..#...H.#.",
+    "T...H....B"
+]
+
 class MultiTreasureHunterMDP:
     def __init__(self, map_lines):
         self.original_map = [list(row) for row in map_lines]
@@ -47,7 +55,6 @@ class MultiTreasureHunterMDP:
         )
 
     def get_possible_actions(self, state=None, agent_id='1'):
-        """Zwraca możliwe akcje dla konkretnego agenta"""
         if state is None:
             return [LEFT, DOWN, RIGHT, UP]
         
@@ -98,20 +105,20 @@ class MultiTreasureHunterMDP:
             collision_pos = self.agent_pos['1']
             
             if self.agent_holding['1']:
-                self.treasures.add(collision_pos)
+                self.treasures.add(prev_pos1)
                 self.agent_holding['1'] = False
                 info['1_drop_collision'] = True
             
             if self.agent_holding['2']:
-                self.treasures.add(collision_pos)
+                self.treasures.add(prev_pos2)
                 self.agent_holding['2'] = False
                 info['2_drop_collision'] = True
             
             self.agent_pos['1'] = self.bases['1']
             self.agent_pos['2'] = self.bases['2']
             
-            # rewards['1'] -= 10
-            # rewards['2'] -= 10
+            rewards['1'] -= 10
+            rewards['2'] -= 10
             info['collision'] = True
 
         for agent_id, pos, prev_pos in [('1', self.agent_pos['1'], prev_pos1), ('2', self.agent_pos['2'], prev_pos2)]:
