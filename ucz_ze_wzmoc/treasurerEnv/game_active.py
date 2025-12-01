@@ -12,15 +12,6 @@ from agents import QLearningAgent, DQLearningAgent, SARSAAgent, SARSALambdaAgent
 
 
 def play_and_train_multi(env, agent1, agent2, episodes=5000, use_agent_perspective=True):
-    """
-    Trenuje dwóch agentów w środowisku multi-agent.
-    
-    Args:
-        env: Środowisko gry
-        agent1, agent2: Agenci do trenowania
-        episodes: Liczba epizodów treningowych
-        use_agent_perspective: Jeśli True, każdy agent dostaje stan ze swojej perspektywy
-    """
     rewards_history_agent1 = []
     rewards_history_agent2 = []
     scores_history_agent1 = []
@@ -32,7 +23,6 @@ def play_and_train_multi(env, agent1, agent2, episodes=5000, use_agent_perspecti
         agent1.reset()
         agent2.reset()
 
-        # Przekształć stan dla każdego agenta
         if use_agent_perspective:
             state1 = env.get_agent_state(state, '1')
             state2 = env.get_agent_state(state, '2')
@@ -48,7 +38,6 @@ def play_and_train_multi(env, agent1, agent2, episodes=5000, use_agent_perspecti
             total_r1 += r1
             total_r2 += r2
 
-            # Przekształć next_state dla każdego agenta
             if use_agent_perspective:
                 next_state1 = env.get_agent_state(next_state, '1')
                 next_state2 = env.get_agent_state(next_state, '2')
@@ -139,17 +128,6 @@ def render_game(env, step, last_actions=None, last_rewards=None, last_info=None)
     print("=" * 60)
 
 def test_policy_animated(env, agent1, agent2, episodes=3, delay=1.0, max_steps=100, use_agent_perspective=True):
-    """
-    Testuje wytrenowane polityki agentów z animacją.
-    
-    Args:
-        env: Środowisko gry
-        agent1, agent2: Agenci do testowania
-        episodes: Liczba gier do rozegrania
-        delay: Opóźnienie między krokami
-        max_steps: Maksymalna liczba kroków
-        use_agent_perspective: Jeśli True, każdy agent dostaje stan ze swojej perspektywy
-    """
     agent1.turn_off_learning()
     agent2.turn_off_learning()
     
@@ -214,7 +192,6 @@ def test_policy_animated(env, agent1, agent2, episodes=3, delay=1.0, max_steps=1
                 input("\nNacisnij ENTER aby rozpoczac nastepna gre...")
 
 def load_agents(agents_path):
-    """Wczytaj parę agentów z jednego pliku .pkl"""
     with open(agents_path, 'rb') as f:
         agents_dict = pickle.load(f)
     
@@ -283,8 +260,6 @@ if __name__ == "__main__":
             
             agent1, agent2 = load_agents(agents_path)
             
-            # UWAGA: get_possible_actions oczekuje stanu z perspektywy agenta
-            # (po transformacji przez env.get_agent_state)
             agent1.get_legal_actions = lambda s: env.get_possible_actions(s, agent_id='1')
             agent2.get_legal_actions = lambda s: env.get_possible_actions(s, agent_id='2')
             
