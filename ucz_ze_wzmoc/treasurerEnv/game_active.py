@@ -11,6 +11,67 @@ from treasure_env import MultiTreasureHunterMDP, LEFT, DOWN, RIGHT, UP
 from agents import QLearningAgent, DQLearningAgent, SARSAAgent, SARSALambdaAgent, ExpectedSARSAAgent
 
 
+def play_and_train_multi(env, agent1, agent2, episodes=5000, use_agent_perspective=True):
+    rewards_history_agent1 = []
+    rewards_history_agent2 = []
+    scores_history_agent1 = []
+    scores_history_agent2 = []
+
+    for ep in range(episodes):
+        state = env.reset()
+        total_r1 = total_r2 = 0
+        agent1.reset()
+        agent2.reset()
+
+        if use_agent_perspective:
+            state1 = env.get_agent_state(state, '1')
+            state2 = env.get_agent_state(state, '2')
+        else:
+            state1 = state2 = state
+        
+        action1 = agent1.get_action(state1)
+        action2 = agent2.get_action(state2)
+
+        while True:
+            next_state, rewards, done, _ = env.step(action1, action2)
+            r1, r2 = rewards['1'], rewards['2']
+            total_r1 += r1
+            total_r2 += r2
+
+            if use_agent_perspective:
+                next_state1 = env.get_agent_state(next_state, '1')
+                next_state2 = env.get_agent_state(next_state, '2')
+            else:
+                next_state1 = next_state2 = next_state
+
+            next_action1 = agent1.update(state1, action1, r1, next_state1)
+            next_action2 = agent2.update(state2, action2, r2, next_state2)
+
+            action1 = next_action1 if next_action1 is not None else agent1.get_action(next_state1)
+            action2 = next_action2 if next_action2 is not None else agent2.get_action(next_state2)
+            
+            state1 = next_state1
+            state2 = next_state2
+            state = next_state
+
+            if done:
+                break
+
+        score1 = env.agent_score['1']
+        score2 = env.agent_score['2']
+        
+        rewards_history_agent1.append(total_r1)
+        rewards_history_agent2.append(total_r2)
+        scores_history_agent1.append(score1)
+        scores_history_agent2.append(score2)
+
+        if (ep + 1) % 100 == 0:
+            print(f"Epizod {ep+1:4d} | Agent1: R={total_r1:6.1f} P={score1} | Agent2: R={total_r2:6.1f} P={score2}")
+
+    return (rewards_history_agent1, rewards_history_agent2, 
+            scores_history_agent1, scores_history_agent2)
+
+
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -66,7 +127,7 @@ def render_game(env, step, last_actions=None, last_rewards=None, last_info=None)
     
     print("=" * 60)
 
-def test_policy_animated(env, agent1, agent2, episodes=3, delay=1.0, max_steps=100):
+def test_policy_animated(env, agent1, agent2, episodes=3, delay=1.0, max_steps=100, use_agent_perspective=True):
     agent1.turn_off_learning()
     agent2.turn_off_learning()
     
@@ -80,8 +141,14 @@ def test_policy_animated(env, agent1, agent2, episodes=3, delay=1.0, max_steps=1
         time.sleep(delay * 1.5)  # Dłuższa pauza na początku
         
         while step < max_steps:
-            a1 = agent1.get_action(state)
-            a2 = agent2.get_action(state)
+            if use_agent_perspective:
+                state1 = env.get_agent_state(state, '1')
+                state2 = env.get_agent_state(state, '2')
+            else:
+                state1 = state2 = state
+            
+            a1 = agent1.get_action(state1)
+            a2 = agent2.get_action(state2)
             
             state, rewards, done, info = env.step(a1, a2)
             step += 1
@@ -125,7 +192,6 @@ def test_policy_animated(env, agent1, agent2, episodes=3, delay=1.0, max_steps=1
                 input("\nNacisnij ENTER aby rozpoczac nastepna gre...")
 
 def load_agents(agents_path):
-    """Wczytaj parę agentów z jednego pliku .pkl"""
     with open(agents_path, 'rb') as f:
         agents_dict = pickle.load(f)
     
