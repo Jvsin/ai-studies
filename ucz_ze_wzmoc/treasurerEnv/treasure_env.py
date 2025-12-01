@@ -1,14 +1,6 @@
 LEFT, DOWN, RIGHT, UP = 0, 1, 2, 3
 ACTIONS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
-MAP3 = [
-    "A....H...T",
-    ".#.#....#.",
-    ".H.#T..#H.",
-    "..#...H.#.",
-    "T...H....B"
-]
-
 class MultiTreasureHunterMDP:
     def __init__(self, map_lines):
         self.original_map = [list(row) for row in map_lines]
@@ -58,17 +50,21 @@ class MultiTreasureHunterMDP:
         pos1, pos2, treasures, hold1, hold2 = state
         
         if agent_id == '1':
-            return (pos1, pos2, treasures, hold1, hold2)
+            return (pos1, pos2, frozenset(treasures), hold1, hold2)
         else:
-            return (pos2, pos1, treasures, hold2, hold1)
+            return (pos2, pos1, frozenset(treasures), hold2, hold1)
+
 
     def get_possible_actions(self, state=None, agent_id='1'):
         if state is None:
             return [LEFT, DOWN, RIGHT, UP]
         
-        pos1, pos2, _, _, _ = state
-        agent_pos = pos1 if agent_id == '1' else pos2
-        x, y = agent_pos
+        my_pos, _, _, _, _ = state
+        x, y = my_pos
+
+        # pos1, pos2, _, _, _ = state
+        # agent_pos = pos1 if agent_id == '1' else pos2
+        # x, y = agent_pos
         
         possible_actions = []
         for action in [LEFT, DOWN, RIGHT, UP]:
@@ -125,8 +121,8 @@ class MultiTreasureHunterMDP:
             self.agent_pos['1'] = self.bases['1']
             self.agent_pos['2'] = self.bases['2']
             
-            rewards['1'] -= 10
-            rewards['2'] -= 10
+            rewards['1'] -= 5
+            rewards['2'] -= 5
             info['collision'] = True
 
         for agent_id, pos, prev_pos in [('1', self.agent_pos['1'], prev_pos1), ('2', self.agent_pos['2'], prev_pos2)]:
@@ -146,13 +142,13 @@ class MultiTreasureHunterMDP:
             if pos in self.treasures and not self.agent_holding[agent_id]:
                 self.treasures.remove(pos)
                 self.agent_holding[agent_id] = True
-                rewards[agent_id] += 2
+                rewards[agent_id] += 4
                 info[f'{agent_id}_pick'] = True
 
             if pos == self.bases[agent_id] and self.agent_holding[agent_id]:
                 self.agent_holding[agent_id] = False
                 self.agent_score[agent_id] += 1  
-                rewards[agent_id] += 5 
+                rewards[agent_id] += 8 
                 info[f'{agent_id}_deposit'] = True
 
         done = self._is_done()
