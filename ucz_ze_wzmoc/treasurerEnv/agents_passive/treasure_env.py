@@ -55,7 +55,7 @@ class MultiTreasureHunterMDP:
             return (pos2, pos1, frozenset(treasures), hold2, hold1)
 
 
-    def get_possible_actions(self, state=None, agent_id='1'):
+    def get_possible_actions(self, state=None, agent='1'):
         if state is None:
             return [LEFT, DOWN, RIGHT, UP]
         
@@ -77,22 +77,118 @@ class MultiTreasureHunterMDP:
         
         return possible_actions
     
-    def get_next_states(self, current_state, action):
+    def get_opponent_actions(self, agent_id, state=None):
+        pos1, pos2, _, _, _ = state
+        op_pos = pos2 if agent_id == '2' else pos1
+        x, y = op_pos
+
+        possible_actions = []
+        for action in [LEFT, DOWN, RIGHT, UP]:
+            _x, _y = ACTIONS[action]
+            new_x, new_y = x + _x, y + _y
+            
+            if 0 <= new_x < self.width and 0 <= new_y < self.height:
+                if self.map[new_y][new_x] != '#':
+                    possible_actions.append(action)
+        
+        return possible_actions
+
+    
+    def get_next_states(self, current_state, action, agent_id='1'):
         my_pos, op_pos, treasures, my_hold, op_hold = current_state
         x, y = my_pos
         _x, _y = ACTIONS[action]
         new_x, new_y = x + _x, y + _y
-            
-        if 0 <= new_x < self.width and 0 <= new_y < self.height:
-            if self.map[new_y][new_x] != '#':
-                return [(
-                    (new_x, new_y),
-                    op_pos,
-                    treasures,
-                    my_hold,
-                    op_hold
-                )]
+        
+        if not (0 <= new_x < self.width and 0 <= new_y < self.height):
+            return [current_state]  
+        if self.map[new_y][new_x] == '#':
+            return [current_state]  
+        
+        new_pos = (new_x, new_y)
+        new_op_pos = op_pos
+        new_treasures = set(treasures)
+        new_my_hold = my_hold
+        new_op_hold = op_hold
+        my_base = self.bases[agent_id]
+        
+        if my_pos == op_pos:
+            new_pos = self.bases[agent_id]
+            new_op_pos = self.bases['2' if agent_id == '1' else '2']
+        
+            if my_hold:
+                new_my_hold = False
+                new_treasures.add(my_pos)
+            if op_hold:
+                new_op_hold = False
+                new_treasures.add(op_pos)
+            # return [(new_pos, new_op_pos, frozenset(new_treasures), new_my_hold, new_op_hold)]
 
+        if self.map[new_y][new_x] == 'H':
+            new_pos = my_base
+            if my_hold:
+                new_treasures.add(my_pos)
+                new_my_hold = False
+        else:
+            if new_pos in new_treasures and not my_hold:
+                new_treasures.remove(new_pos)
+                new_my_hold = True
+            
+            if my_hold and new_pos == my_base:
+                new_my_hold = False
+        
+        ## sprawdzać potencjalne akcje opponenta
+        # op_next_actions = self.get_opponent_actions('2' if agent_id == '1' else '1', state=current_state)
+        # next_states = []
+        # for op_action in op_next_actions:
+        #     new_op_pos = op_pos + ACTIONS[op_action]
+        #     next_state = (
+        #         new_pos,
+        #         new_op_pos,
+        #         frozenset(new_treasures),
+        #         new_my_hold,
+        #         new_op_hold
+        #     )
+        #     next_states.append(next_state)
+        
+        # return next_states
+
+        
+        next_state = (
+            new_pos,
+            new_op_pos,
+            frozenset(new_treasures),
+            new_my_hold,
+            new_op_hold
+        )
+        
+        return [next_state]
+        
+
+    # def get_reward(self, current_state, action, next_state, agent_id='1'):
+    #     my_pos_old, _, treasures_old, my_hold_old, _ = current_state
+    #     my_pos_new, op_pos_new, treasures_new, my_hold_new, _ = next_state
+    #     x, y = my_pos_new
+    #     my_base = self.bases[agent_id]
+
+    #     reward = -1
+        
+    #     if my_pos_new == op_pos_new:
+    #         reward -= 5
+        
+    #     if self.map[y][x] == 'H':
+    #         reward -= 30
+        
+    #     # Podniesienie skarbu (skarb był w treasures_old, ale nie jest w treasures_new)
+    #     if my_pos_new in treasures_old and my_pos_new not in treasures_new and not my_hold_old and my_hold_new:
+    #         reward += 4
+        
+    #     # Oddanie skarbu do swojej bazy
+    #     if my_hold_old and not my_hold_new and my_pos_new == my_base:
+    #         reward += 8
+
+    #     return reward
+    
     def get_reward(self, current_state, action, next_state, agent):
         # my_pos, _, treasures, _, _ = current_state
         # x, y = my_pos
