@@ -1,6 +1,0 @@
-A ======== vs ========= B
-QLearning2 vs ExpectedSARSA
-
-SARSA      vs QLearning
-
-SARSALambda vs DQLearning
