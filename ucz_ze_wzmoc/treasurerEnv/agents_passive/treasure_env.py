@@ -1,6 +1,10 @@
 LEFT, DOWN, RIGHT, UP = 0, 1, 2, 3
 ACTIONS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-
+GOAL_REWARD = 100
+GAIN_REWARD = 20
+HOLE_REWARD = -50
+COLLISION_REWARD = -10
+STEP_REWARD = -0.5
 class MultiTreasureHunterMDP:
     def __init__(self, map_lines):
         self.original_map = [list(row) for row in map_lines]
@@ -164,50 +168,52 @@ class MultiTreasureHunterMDP:
         
         return [next_state]
         
-
-    # def get_reward(self, current_state, action, next_state, agent_id='1'):
-    #     my_pos_old, _, treasures_old, my_hold_old, _ = current_state
-    #     my_pos_new, op_pos_new, treasures_new, my_hold_new, _ = next_state
-    #     x, y = my_pos_new
-    #     my_base = self.bases[agent_id]
-
-    #     reward = -1
-        
-    #     if my_pos_new == op_pos_new:
-    #         reward -= 5
-        
-    #     if self.map[y][x] == 'H':
-    #         reward -= 30
-        
-    #     # Podniesienie skarbu (skarb był w treasures_old, ale nie jest w treasures_new)
-    #     if my_pos_new in treasures_old and my_pos_new not in treasures_new and not my_hold_old and my_hold_new:
-    #         reward += 4
-        
-    #     # Oddanie skarbu do swojej bazy
-    #     if my_hold_old and not my_hold_new and my_pos_new == my_base:
-    #         reward += 8
-
-    #     return reward
     
     def get_reward(self, current_state, action, next_state, agent):
-        # my_pos, _, treasures, _, _ = current_state
-        # x, y = my_pos
-        # _x, _y = ACTIONS[action]
-
-        my_pos, op_pos, treasures, my_hold, op_hold = next_state
-        x, y = my_pos
-
-        reward = -1
-        if my_pos == op_pos:
-            reward += -5
+        _, _, treasures_old, my_hold_old, _ = current_state
+        
+        # Rozpakowanie NOWEGO stanu
+        my_pos_new, op_pos_new, _, my_hold_new, _ = next_state
+        x, y = my_pos_new
+        
+        reward = STEP_REWARD
+        # 1. Kolizja z przeciwnikiem
+        if my_pos_new == op_pos_new:
+            reward += COLLISION_REWARD
+            
+        # 2. Wejście w pułapkę
         if self.map[y][x] == 'H':
-            reward += -30
-        if my_pos in self.treasures and not my_hold:
-            reward += 4
-        if my_pos == self.bases[agent] and my_hold:
-            reward += 8
+            reward += HOLE_REWARD
+            
+        # 3. Podniesienie skarbu
+        # Logika: Jeśli jestem na polu, które BYŁO w starym zestawie skarbów, 
+        # i teraz trzymam skarb (a wcześniej nie trzymałem), to znaczy, że go podniosłem.
+        if my_pos_new in treasures_old and not my_hold_old and my_hold_new:
+            reward += GAIN_REWARD
+            
+        if my_pos_new == self.bases[agent] and my_hold_old and not my_hold_new:
+            reward += GOAL_REWARD
 
         return reward
+        
+        # # my_pos, _, treasures, _, _ = current_state
+        # # x, y = my_pos
+        # # _x, _y = ACTIONS[action]
+
+        # my_pos, op_pos, treasures, my_hold, op_hold = next_state
+        # x, y = my_pos
+
+        # reward = STEP_REWARD
+        # if my_pos == op_pos:
+        #     reward += COLLISION_REWARD
+        # if self.map[y][x] == 'H':
+        #     reward += HOLE_REWARD
+        # if my_pos in self.treasures and not my_hold:
+        #     reward += GAIN_REWARD
+        # if my_pos == self.bases[agent] and my_hold:
+        #     reward += GOAL_REWARD
+
+        # return reward
 
 
     def _move(self, agent_id, action):
@@ -235,8 +241,8 @@ class MultiTreasureHunterMDP:
 
         self.agent_pos['1'] = self._move('1', action1)
         self.agent_pos['2'] = self._move('2', action2)
-        rewards['1'] -= 1
-        rewards['2'] -= 1
+        rewards['1'] -= STEP_REWARD
+        rewards['2'] -= STEP_REWARD
 
         if self.agent_pos['1'] == self.agent_pos['2']:
             collision_pos = self.agent_pos['1']
@@ -254,8 +260,8 @@ class MultiTreasureHunterMDP:
             self.agent_pos['1'] = self.bases['1']
             self.agent_pos['2'] = self.bases['2']
             
-            rewards['1'] -= 5
-            rewards['2'] -= 5
+            rewards['1'] -= COLLISION_REWARD
+            rewards['2'] -= COLLISION_REWARD
             info['collision'] = True
 
         for agent_id, pos, prev_pos in [('1', self.agent_pos['1'], prev_pos1), ('2', self.agent_pos['2'], prev_pos2)]:
@@ -268,20 +274,20 @@ class MultiTreasureHunterMDP:
                     info[f'{agent_id}_drop_trap'] = True
                 
                 self.agent_pos[agent_id] = self.bases[agent_id]
-                rewards[agent_id] = -30
+                rewards[agent_id] = HOLE_REWARD
                 info[f'{agent_id}_trap'] = True
                 continue
 
             if pos in self.treasures and not self.agent_holding[agent_id]:
                 self.treasures.remove(pos)
                 self.agent_holding[agent_id] = True
-                rewards[agent_id] += 4
+                rewards[agent_id] += GAIN_REWARD
                 info[f'{agent_id}_pick'] = True
 
             if pos == self.bases[agent_id] and self.agent_holding[agent_id]:
                 self.agent_holding[agent_id] = False
                 self.agent_score[agent_id] += 1  
-                rewards[agent_id] += 8 
+                rewards[agent_id] += GOAL_REWARD
                 info[f'{agent_id}_deposit'] = True
 
         done = self._is_done()

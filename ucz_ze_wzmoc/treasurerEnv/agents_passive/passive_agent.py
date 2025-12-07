@@ -5,9 +5,9 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 MAP = [
-    "A..T.H...T",
+    "A....H...T",
     ".#.#...##.",
-    ".H.#...#H.",
+    ".H.#.T.#H.",
     ".##...H.#.",
     "T...H....B"
 ]
@@ -62,15 +62,15 @@ def value_iteration(mdp, gamma, theta, agent='1'):
             for a in possible_actions:
                 p_next_states = mdp.get_next_states(s, a, agent)
                 result = 0
-                # p = 1 / len(p_next_states)
+                p = 1 / len(p_next_states)
                 for ns in p_next_states:
                     reward = mdp.get_reward(s, a, ns, agent)
                     # # Jeśli następny stan nie jest w V, zainicjalizuj go zerem
                     if ns not in V:
                         V[ns] = 0
                     # result += p_next_states[ns] * (reward + gamma * V[ns])
-                    result += 1 * (reward + gamma * V[ns])
-                    # result += p * (reward + gamma * V[ns])
+                    # result += 1 * (reward + gamma * V[ns])
+                    result += p * (reward + gamma * V[ns])
                 a_values[a] = result
 
             best_action = max(a_values, key=a_values.get)
