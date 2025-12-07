@@ -1,9 +1,9 @@
 LEFT, DOWN, RIGHT, UP = 0, 1, 2, 3
 ACTIONS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 GOAL_REWARD = 100
-GAIN_REWARD = 20
-HOLE_REWARD = -50
-COLLISION_REWARD = -10
+GAIN_REWARD = 30
+HOLE_REWARD = -80
+COLLISION_REWARD = -50
 STEP_REWARD = -0.5
 class MultiTreasureHunterMDP:
     def __init__(self, map_lines):
@@ -11,6 +11,11 @@ class MultiTreasureHunterMDP:
         self.height = len(self.original_map)
         self.width = len(self.original_map[0])
         self.treasures = set()
+        self.initial_treasures_locations = set()
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.original_map[y][x] == 'T':
+                    self.initial_treasures_locations.add((x, y))
         self.bases = {}
         self.agent_pos = {}
         self.agent_holding = {'1': False, '2': False}
@@ -116,22 +121,35 @@ class MultiTreasureHunterMDP:
         new_op_hold = op_hold
         my_base = self.bases[agent_id]
         
+        def get_respawn_pos(current_treasure_set):
+            for t_pos in self.initial_treasures_locations:
+                if t_pos not in current_treasure_set:
+                    return t_pos
+            return None
+
         if my_pos == op_pos:
             new_pos = self.bases[agent_id]
             new_op_pos = self.bases['2' if agent_id == '1' else '2']
         
             if my_hold:
                 new_my_hold = False
-                new_treasures.add(my_pos)
+                # new_treasures.add(my_pos)
+                respawn = get_respawn_pos(treasures)
+                if respawn: new_treasures.add(respawn)
             if op_hold:
                 new_op_hold = False
-                new_treasures.add(op_pos)
+                # new_treasures.add(op_pos)
+                respawn = get_respawn_pos(new_treasures) # Uwaga: szukamy w zaktualizowanym secie
+                if respawn: new_treasures.add(respawn)
             # return [(new_pos, new_op_pos, frozenset(new_treasures), new_my_hold, new_op_hold)]
 
         if self.map[new_y][new_x] == 'H':
             new_pos = my_base
             if my_hold:
-                new_treasures.add(my_pos)
+                # new_treasures.add(my_pos)
+                respawn = get_respawn_pos(treasures)
+                if respawn: new_treasures.add(respawn)
+                new_my_hold = False
                 new_my_hold = False
         else:
             if new_pos in new_treasures and not my_hold:
@@ -170,27 +188,30 @@ class MultiTreasureHunterMDP:
         
     
     def get_reward(self, current_state, action, next_state, agent):
-        _, _, treasures_old, my_hold_old, _ = current_state
+        my_pos_old, _, treasures_old, my_hold_old, _ = current_state
+        x_old, y_old = my_pos_old
         
-        # Rozpakowanie NOWEGO stanu
+        _x, _y = ACTIONS[action]
+        intended_x, intended_y = x_old + _x, y_old + _y
+        
         my_pos_new, op_pos_new, _, my_hold_new, _ = next_state
-        x, y = my_pos_new
         
         reward = STEP_REWARD
-        # 1. Kolizja z przeciwnikiem
+        # Sprawdzamy czy w ogóle wyszliśmy poza mapę (żeby nie indeksować poza tablicą)
+        # if 0 <= intended_x < self.width and 0 <= intended_y < self.height:
+        #     tile_content = self.map[intended_y][intended_x]
+        # else:
+        #     tile_content = '#' # Ściana/poza mapą
+
+        if self.map[intended_y][intended_x] == 'H':
+            return HOLE_REWARD
+
         if my_pos_new == op_pos_new:
-            reward += COLLISION_REWARD
-            
-        # 2. Wejście w pułapkę
-        if self.map[y][x] == 'H':
-            reward += HOLE_REWARD
-            
-        # 3. Podniesienie skarbu
-        # Logika: Jeśli jestem na polu, które BYŁO w starym zestawie skarbów, 
-        # i teraz trzymam skarb (a wcześniej nie trzymałem), to znaczy, że go podniosłem.
+            return COLLISION_REWARD
+
         if my_pos_new in treasures_old and not my_hold_old and my_hold_new:
             reward += GAIN_REWARD
-            
+ 
         if my_pos_new == self.bases[agent] and my_hold_old and not my_hold_new:
             reward += GOAL_REWARD
 
@@ -244,16 +265,26 @@ class MultiTreasureHunterMDP:
         rewards['1'] -= STEP_REWARD
         rewards['2'] -= STEP_REWARD
 
+        def respawn_treasure():
+            for t_pos in self.initial_treasures_locations:
+                if t_pos not in self.treasures:
+                    self.treasures.add(t_pos)
+                    return
+
         if self.agent_pos['1'] == self.agent_pos['2']:
             collision_pos = self.agent_pos['1']
             
             if self.agent_holding['1']:
-                self.treasures.add(prev_pos1)
+                # self.treasures.add(prev_pos1)
+                respawn_treasure()
+
                 self.agent_holding['1'] = False
                 info['1_drop_collision'] = True
             
             if self.agent_holding['2']:
-                self.treasures.add(prev_pos2)
+                # self.treasures.add(prev_pos2)
+                respawn_treasure()
+
                 self.agent_holding['2'] = False
                 info['2_drop_collision'] = True
             
@@ -269,7 +300,8 @@ class MultiTreasureHunterMDP:
 
             if self.map[y][x] == 'H':
                 if self.agent_holding[agent_id]:
-                    self.treasures.add(prev_pos)
+                    # self.treasures.add(prev_pos)
+                    respawn_treasure()
                     self.agent_holding[agent_id] = False
                     info[f'{agent_id}_drop_trap'] = True
                 
@@ -292,6 +324,19 @@ class MultiTreasureHunterMDP:
 
         done = self._is_done()
         return self._get_state(), rewards, done, info
+
+    def is_terminal(self, state):
+        pos1, pos2, treasures, hold1, hold2 = state
+
+        check_treasure = len(treasures) == 0
+
+        check_both_home = (
+            pos1 == self.bases['1'] and
+            pos2 == self.bases['2'] and
+            not hold1 and not hold2
+        )
+
+        return check_treasure and check_both_home
 
     def _is_done(self):
         # check_trap1 = self.map[self.agent_pos['1'][1]][self.agent_pos['1'][0]] == 'H'

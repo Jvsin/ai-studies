@@ -7,8 +7,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 MAP = [
     "A....H...T",
     ".#.#...##.",
-    ".H.#.T.#H.",
-    ".##...H.#.",
+    ".H.#...#H.",
+    ".##.T.H.#.",
     "T...H....B"
 ]
 
@@ -55,6 +55,11 @@ def value_iteration(mdp, gamma, theta, agent='1'):
     while True:
         delta = 0
         for s in mdp.get_all_states():
+            if mdp.is_terminal(s):
+                V[s] = 0
+                policy[s] = 0   
+                continue
+
             last_v = V[s]
             possible_actions = mdp.get_possible_actions(s, agent)
             a_values = dict()
@@ -65,7 +70,7 @@ def value_iteration(mdp, gamma, theta, agent='1'):
                 p = 1 / len(p_next_states)
                 for ns in p_next_states:
                     reward = mdp.get_reward(s, a, ns, agent)
-                    # # Jeśli następny stan nie jest w V, zainicjalizuj go zerem
+                    
                     if ns not in V:
                         V[ns] = 0
                     # result += p_next_states[ns] * (reward + gamma * V[ns])
