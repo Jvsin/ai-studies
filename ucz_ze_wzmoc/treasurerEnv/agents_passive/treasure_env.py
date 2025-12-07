@@ -4,7 +4,7 @@ GOAL_REWARD = 100
 GAIN_REWARD = 30
 HOLE_REWARD = -80
 COLLISION_REWARD = -50
-STEP_REWARD = -0.5
+STEP_REWARD = -1
 class MultiTreasureHunterMDP:
     def __init__(self, map_lines):
         self.original_map = [list(row) for row in map_lines]
@@ -159,23 +159,6 @@ class MultiTreasureHunterMDP:
             if my_hold and new_pos == my_base:
                 new_my_hold = False
         
-        ## sprawdzać potencjalne akcje opponenta
-        # op_next_actions = self.get_opponent_actions('2' if agent_id == '1' else '1', state=current_state)
-        # next_states = []
-        # for op_action in op_next_actions:
-        #     new_op_pos = op_pos + ACTIONS[op_action]
-        #     next_state = (
-        #         new_pos,
-        #         new_op_pos,
-        #         frozenset(new_treasures),
-        #         new_my_hold,
-        #         new_op_hold
-        #     )
-        #     next_states.append(next_state)
-        
-        # return next_states
-
-        
         next_state = (
             new_pos,
             new_op_pos,
@@ -188,7 +171,7 @@ class MultiTreasureHunterMDP:
         
     
     def get_reward(self, current_state, action, next_state, agent):
-        my_pos_old, _, treasures_old, my_hold_old, _ = current_state
+        my_pos_old, _, treasures_old, my_hold_old, op_hold_old = current_state
         x_old, y_old = my_pos_old
         
         _x, _y = ACTIONS[action]
@@ -197,17 +180,17 @@ class MultiTreasureHunterMDP:
         my_pos_new, op_pos_new, _, my_hold_new, _ = next_state
         
         reward = STEP_REWARD
-        # Sprawdzamy czy w ogóle wyszliśmy poza mapę (żeby nie indeksować poza tablicą)
-        # if 0 <= intended_x < self.width and 0 <= intended_y < self.height:
-        #     tile_content = self.map[intended_y][intended_x]
-        # else:
-        #     tile_content = '#' # Ściana/poza mapą
 
         if self.map[intended_y][intended_x] == 'H':
             return HOLE_REWARD
 
         if my_pos_new == op_pos_new:
-            return COLLISION_REWARD
+            chase_winner = (len(treasures_old) == 0 and op_hold_old and not my_hold_old)
+
+            if chase_winner:
+                return 150
+            else:
+                return COLLISION_REWARD
 
         if my_pos_new in treasures_old and not my_hold_old and my_hold_new:
             reward += GAIN_REWARD
@@ -247,9 +230,9 @@ class MultiTreasureHunterMDP:
         if self.map[new_y][new_x] == '#':
             return x, y
         
-        other_pos = self.agent_pos['2'] if agent_id == '1' else self.agent_pos['1']
-        if (new_x, new_y) == other_pos:
-            return x, y
+        # other_pos = self.agent_pos['2'] if agent_id == '1' else self.agent_pos['1']
+        # if (new_x, new_y) == other_pos:
+        #     return x, y
 
         return new_x, new_y
 
@@ -358,36 +341,30 @@ class MultiTreasureHunterMDP:
     def get_all_states(self):
         all_states = []
         
-        # Znajdź wszystkie możliwe pozycje dla agentów (bez ścian)
         valid_positions = []
         for y in range(self.height):
             for x in range(self.width):
                 if self.map[y][x] != '#':
                     valid_positions.append((x, y))
         
-        # Znajdź wszystkie możliwe pozycje skarbów (oryginalne + puste pola)
         treasure_positions = []
         for y in range(self.height):
             for x in range(self.width):
                 if self.original_map[y][x] in ['T', '.', 'A', 'B']:
                     treasure_positions.append((x, y))
         
-        # Generuj wszystkie możliwe kombinacje skarbów (podzbiory)
-        # Dla uproszczenia, rozważamy tylko pierwotne pozycje skarbów
         initial_treasures = []
         for y in range(self.height):
             for x in range(self.width):
                 if self.original_map[y][x] == 'T':
                     initial_treasures.append((x, y))
         
-        # Generuj wszystkie podzbiory skarbów (2^n możliwości)
         from itertools import combinations
         treasure_subsets = []
         for r in range(len(initial_treasures) + 1):
             for subset in combinations(initial_treasures, r):
                 treasure_subsets.append(frozenset(subset))
         
-        # Generuj wszystkie stany
         for pos1 in valid_positions:
             for pos2 in valid_positions:
                 for treasures in treasure_subsets:

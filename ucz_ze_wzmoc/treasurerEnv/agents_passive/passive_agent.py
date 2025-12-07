@@ -7,8 +7,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 MAP = [
     "A....H...T",
     ".#.#...##.",
-    ".H.#...#H.",
-    ".##.T.H.#.",
+    ".H.#.T.#H.",
+    ".##...H.#.",
     "T...H....B"
 ]
 
