@@ -199,7 +199,25 @@ class MultiTreasureHunterMDP:
             reward += GOAL_REWARD
 
         return reward
+        
+        # # my_pos, _, treasures, _, _ = current_state
+        # # x, y = my_pos
+        # # _x, _y = ACTIONS[action]
 
+        # my_pos, op_pos, treasures, my_hold, op_hold = next_state
+        # x, y = my_pos
+
+        # reward = STEP_REWARD
+        # if my_pos == op_pos:
+        #     reward += COLLISION_REWARD
+        # if self.map[y][x] == 'H':
+        #     reward += HOLE_REWARD
+        # if my_pos in self.treasures and not my_hold:
+        #     reward += GAIN_REWARD
+        # if my_pos == self.bases[agent] and my_hold:
+        #     reward += GOAL_REWARD
+
+        # return reward
 
 
     def _move(self, agent_id, action):
@@ -280,7 +298,7 @@ class MultiTreasureHunterMDP:
                     info[f'{agent_id}_drop_trap'] = True
                 
                 self.agent_pos[agent_id] = self.bases[agent_id]
-                rewards[agent_id] += HOLE_REWARD
+                rewards[agent_id] += HOLE_REWARD # += bo liczba jest ujemna
                 info[f'{agent_id}_trap'] = True
                 continue
 
@@ -369,3 +387,16 @@ class MultiTreasureHunterMDP:
 
     def render(self):
         pass
+        # grid = [row[:] for row in self.map]
+        # for x, y in self.treasures:
+        #     grid[y][x] = 'T'
+        # p1, p2 = self.agent_pos['1'], self.agent_pos['2']
+        # grid[p1[1]][p1[0]] = if self.agent_holding['1'] else '1'
+        # grid[p2[1]][p2[0]] = if self.agent_holding['2'] else '2'
+
+        # print("\n" + "="*40)
+        # for row in grid:
+        #     print(''.join(row))
+        # print(f"Skarby: {len(self.treasures)} | Punkty: 1:{self.agent_score['1']}  2:{self.agent_score['2']}")
+        # print(f"Trzyma: 1:{self.agent_holding['1']}  2:{self.agent_holding['2']}")
+        # print("="*40)
