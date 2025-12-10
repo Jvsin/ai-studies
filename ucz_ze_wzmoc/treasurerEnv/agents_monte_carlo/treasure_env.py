@@ -298,7 +298,7 @@ class MultiTreasureHunterMDP:
                     info[f'{agent_id}_drop_trap'] = True
                 
                 self.agent_pos[agent_id] = self.bases[agent_id]
-                rewards[agent_id] += HOLE_REWARD # += bo liczba jest ujemna
+                rewards[agent_id] += HOLE_REWARD 
                 info[f'{agent_id}_trap'] = True
                 continue
 
@@ -354,7 +354,7 @@ class MultiTreasureHunterMDP:
         valid_positions = []
         for y in range(self.height):
             for x in range(self.width):
-                if self.map[y][x] != '#':
+                if self.original_map[y][x] != '#':
                     valid_positions.append((x, y))
         
         treasure_positions = []
