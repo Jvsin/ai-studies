@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This network was created in GeNIe Academic, which can be used for academic teaching and research purposes only -->
+<smile version="1.0" id="Network3" numsamples="10000" discsamples="10000">
+	<nodes>
+		<cpt id="gas_emission">
+			<state id="State0" />
+			<state id="State1" />
+			<probabilities>0.5 0.5</probabilities>
+		</cpt>
+		<cpt id="reflection_of_infrared_radiation">
+			<state id="State0" />
+			<state id="State1" />
+			<parents>gas_emission</parents>
+			<probabilities>0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+		<cpt id="temp_rise">
+			<state id="State0" />
+			<state id="State1" />
+			<parents>gas_emission reflection_of_infrared_radiation</parents>
+			<probabilities>0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+		<cpt id="lose_of_ice">
+			<state id="State0" />
+			<state id="State1" />
+			<parents>temp_rise</parents>
+			<probabilities>0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+		<cpt id="forest_to_deserts">
+			<state id="State0" />
+			<state id="State1" />
+			<parents>temp_rise</parents>
+			<probabilities>0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+	</nodes>
+	<extensions>
+		<genie version="1.0" app="GeNIe 5.0.5310.0 ACADEMIC" name="Network3">
+			<node id="gas_emission">
+				<name>emisja gazów cieplarnianych</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>146 96 278 203</position>
+			</node>
+			<node id="reflection_of_infrared_radiation">
+				<name>odbicie promieniowania podczerwonego z powrotem na Ziemię</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>300 223 459 324</position>
+			</node>
+			<node id="temp_rise">
+				<name>wzrost temperatury</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>102 275 221 346</position>
+			</node>
+			<node id="lose_of_ice">
+				<name>utrata pokrywy lodowej lodowców</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>66 393 176 460</position>
+			</node>
+			<node id="forest_to_deserts">
+				<name>przekształcenie lasów w pustynie</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>236 386 370 465</position>
+			</node>
+		</genie>
+	</extensions>
+</smile>
