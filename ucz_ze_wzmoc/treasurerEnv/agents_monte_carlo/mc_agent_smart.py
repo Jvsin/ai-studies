@@ -17,14 +17,16 @@ class MCTSNode:
     def __init__(self, state, parent=None, action=None):
         self.state = state
         self.parent = parent
-        self.action = action
+        self.action = action #action wykonana by tu przyjść
         self.children = []
         self.visits = 0
         self.value = 0.0
         self.untried_actions = None
         
     def is_fully_expanded(self):
-        return len(self.untried_actions) == 0 if self.untried_actions else False
+        if self.untried_actions is None:
+            return False
+        return len(self.untried_actions) == 0
     
     def best_child(self, c_param=1.41):
         """UCB1"""
@@ -43,12 +45,12 @@ class MCTSNode:
     def most_visited_child(self):
         if not self.children:
             return None
-        return max(self.children, key=lambda c: c.visits)
+        return max(self.children, key=lambda c: c.value / c.visits if c.visits else 0)
 
 
 class MCTSOnlineAgent:
     """Agent MCTS Online"""
-    def __init__(self, env, agent_id='1', num_simulations=100, max_depth=30):
+    def __init__(self, env, agent_id='1', num_simulations=100, max_depth=10):
         self.env = env
         self.agent_id = agent_id
         self.opponent_id = '2' if agent_id == '1' else '1'
@@ -96,8 +98,12 @@ class MCTSOnlineAgent:
                 node.value += rollout_reward
                 node = node.parent
         
-        best_child = root.most_visited_child()
-        return best_child.action if best_child else root.untried_actions[0]
+        # best_child = root.most_visited_child()
+        # return best_child.action if best_child else root.untried_actions[0]
+        if self.agent_id == '1':
+            pass
+        best_child = max(root.children, key=lambda c: c.visits)
+        return best_child.action
     
     def _simulate_action(self, state, my_action):
         """Symuluje akcję"""
@@ -113,44 +119,79 @@ class MCTSOnlineAgent:
         return next_state, rewards[self.agent_id]
     
     def _rollout(self, state, depth=0):
-        """Rollout do końca gry lub max_depth"""
-        if self.env.is_terminal(state) or depth >= self.max_depth:
-            return 0.0
+        """Rollout z heurystyką - agent zmierza do celu"""
+        total_reward = 0.0
+        discount = 1.0
+        current_state = state
+        current_depth = depth
         
-        agent_state = self.env.get_agent_state(state, self.agent_id)
-        possible_actions = self.env.get_possible_actions(agent_state, self.agent_id)
+        while not self.env.is_terminal(current_state) and current_depth < self.max_depth:
+            agent_state = self.env.get_agent_state(current_state, self.agent_id)
+            possible_actions = self.env.get_possible_actions(agent_state, self.agent_id)
+            
+            if not possible_actions:
+                break
+            
+            # Rozpakuj stan z perspektywy agenta
+            my_pos, opponent_pos, treasures, my_holding, opponent_holding = agent_state
+            my_base = self.env.bases[self.agent_id]
+            
+            # Heurystyka: określ cel
+            if my_holding:
+                # Mam skarb -> idź do bazy
+                target = my_base
+            elif treasures:
+                # Nie mam skarbu -> idź do najbliższego skarbu
+                target = min(treasures, key=lambda t: abs(t[0] - my_pos[0]) + abs(t[1] - my_pos[1]))
+            else:
+                # Brak skarbów -> losowy ruch
+                my_action = random.choice(possible_actions)
+                next_state, reward = self._simulate_action(current_state, my_action)
+                total_reward += discount * reward
+                current_state = next_state
+                current_depth += 1
+                discount *= 0.99
+                continue
+            
+            # Wybierz akcję która zbliża do celu (Manhattan distance)
+            best_action = possible_actions[0]
+            best_dist = float('inf')
+            
+            for action in possible_actions:
+                dx, dy = [(-1, 0), (0, 1), (1, 0), (0, -1)][action]
+                new_pos = (my_pos[0] + dx, my_pos[1] + dy)
+                dist = abs(new_pos[0] - target[0]) + abs(new_pos[1] - target[1])
+                if dist < best_dist:
+                    best_dist = dist
+                    best_action = action
+            
+            # Symuluj wybraną akcję
+            next_state, reward = self._simulate_action(current_state, best_action)
+            total_reward += discount * reward
+            current_state = next_state
+            current_depth += 1
+            discount *= 0.99
         
-        if not possible_actions:
-            return 0.0
-        
-        my_action = random.choice(possible_actions)
-        next_state, reward = self._simulate_action(state, my_action)
-        
-        return reward + 0.99 * self._rollout(next_state, depth + 1)
+        return total_reward
     
     def _opponent_policy(self, state):
         """Prosta polityka przeciwnika"""
+        # Użyj przekonwertowanego stanu z perspektywy przeciwnika
         opponent_state = self.env.get_agent_state(state, self.opponent_id)
         possible_actions = self.env.get_possible_actions(opponent_state, self.opponent_id)
         
         if not possible_actions:
             return 0
         
-        pos1, pos2, treasures, hold1, hold2 = state
+        # opponent_state jest już z perspektywy przeciwnika
+        # (opponent_pos, my_pos, treasures, opponent_hold, my_hold)
+        opponent_pos, _, treasures, opponent_holding, _ = opponent_state
+        opponent_base = self.env.bases[self.opponent_id]
         
-        if self.opponent_id == '1':
-            my_pos = pos1
-            holding = hold1
-            base = self.env.bases['1']
-        else:
-            my_pos = pos2
-            holding = hold2
-            base = self.env.bases['2']
-        
-        if holding:
-            target = base
+        if opponent_holding:
+            target = opponent_base
         elif treasures:
-            target = min(treasures, key=lambda t: abs(t[0] - my_pos[0]) + abs(t[1] - my_pos[1]))
+            target = min(treasures, key=lambda t: abs(t[0] - opponent_pos[0]) + abs(t[1] - opponent_pos[1]))
         else:
             return random.choice(possible_actions)
         
@@ -159,7 +200,7 @@ class MCTSOnlineAgent:
         
         for action in possible_actions:
             dx, dy = [(-1, 0), (0, 1), (1, 0), (0, -1)][action]
-            new_pos = (my_pos[0] + dx, my_pos[1] + dy)
+            new_pos = (opponent_pos[0] + dx, opponent_pos[1] + dy)
             dist = abs(new_pos[0] - target[0]) + abs(new_pos[1] - target[1])
             if dist < best_dist:
                 best_dist = dist
@@ -283,7 +324,7 @@ def play_mcts_vs_mcts(env, num_simulations=100, max_steps=100):
                 print(f"\n🤝 REMIS!")
             print("="*70)
             break
-        
+
         # input("Enter by kontynuować...")
         time.sleep(1)
     
@@ -294,12 +335,19 @@ def play_mcts_vs_mcts(env, num_simulations=100, max_steps=100):
 
 
 if __name__ == "__main__":
+    # map_lines = [
+    #     "A.....#",
+    #     "###...H",
+    #     "#..T..#",
+    #     "H...###",
+    #     "#.....B",
+    # ]
     map_lines = [
-        "A.....#",
-        "###...H",
-        "#..T..#",
-        "H...###",
-        "#.....B",
+        "A...##",
+        "###..H",
+        "#.#T.#",
+        "H...##",
+        "##...B",
     ]
     
     print("="*70)
@@ -320,4 +368,4 @@ if __name__ == "__main__":
     env = MultiTreasureHunterMDP(map_lines)
     
     # Uruchom grę
-    play_mcts_vs_mcts(env, num_simulations=100, max_steps=100)
+    play_mcts_vs_mcts(env, num_simulations=500, max_steps=100)
