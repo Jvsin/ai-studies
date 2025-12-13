@@ -66,42 +66,37 @@ def render_game_state(env, step_num, state, action1=None, action2=None, rewards=
 def play_game_step_by_step(env, policy1, policy2, max_steps=100):
     """
     Rozgrywa grę krok po kroku, wyświetlając stan po każdym ruchu.
-    
-    Args:
-        env: Środowisko gry
-        policy1: Polityka agenta 1
-        policy2: Polityka agenta 2
-        max_steps: Maksymalna liczba kroków
     """
     state = env.reset()
     
     # Początkowy stan
-    render_game_state(env, state, 0)
+    render_game_state(env, 0, state) # Poprawiłem kolejność argumentów (step_num był źle w oryginale wywołania)
     input("\nNaciśnij ENTER aby wykonać pierwszy krok...")
     
     total_reward_1 = 0
     total_reward_2 = 0
     
     for step in range(1, max_steps + 1):
-        # Pobierz stan z perspektywy każdego agenta
+        # Pobierz stan z perspektywy każdego agenta (do odpytania polityki)
         agent1_state = env.get_agent_state(state, '1')
         agent2_state = env.get_agent_state(state, '2')
         
-        # Agent 1 wybiera akcję według polityki
+        # --- AGENT 1 ---
         if agent1_state in policy1:
             action1 = policy1[agent1_state]
         else:
-            # Jeśli stan nie jest w polityce, wybierz losową akcję
-            actions1 = env.get_possible_actions(agent1_state, '1')
+            # POPRAWKA: Przekazujemy 'state' (globalny), a nie 'agent1_state'
+            actions1 = env.get_possible_actions(state, '1')
             action1 = random.choice(actions1) if actions1 else 0
             print(f"  [INFO] Agent 1: Stan nieznany, wybrano losową akcję")
         
-        # Agent 2 wybiera akcję według polityki
+        # --- AGENT 2 ---
         if agent2_state in policy2:
             action2 = policy2[agent2_state]
         else:
-            # Jeśli stan nie jest w polityce, wybierz losową akcję
-            actions2 = env.get_possible_actions(agent2_state, '2')
+            # POPRAWKA: Przekazujemy 'state' (globalny), a nie 'agent2_state'
+            # Wcześniej Agent 2 sprawdzał ruchy dla pozycji Agenta 1!
+            actions2 = env.get_possible_actions(state, '2')
             action2 = random.choice(actions2) if actions2 else 0
             print(f"  [INFO] Agent 2: Stan nieznany, wybrano losową akcję")
         
