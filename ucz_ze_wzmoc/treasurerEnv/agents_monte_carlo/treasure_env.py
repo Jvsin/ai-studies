@@ -16,13 +16,11 @@ class MultiTreasureHunterMDP:
             for x in range(self.width):
                 if self.original_map[y][x] == 'T':
                     self.initial_treasures_locations.add((x, y))
-        # self.map = [row[:] for row in self.original_map]
         self.bases = {}
         self.agent_pos = {}
         self.agent_holding = {'1': False, '2': False}
         self.agent_score = {'1': 0, '2': 0}
         self.winning_score = len([tile for row in self.original_map for tile in row if tile == 'T']) // 2 + 1
-        self.map = [row[:] for row in self.original_map]
 
     def reset(self):
         self.map = [row[:] for row in self.original_map]
@@ -67,47 +65,26 @@ class MultiTreasureHunterMDP:
 
 
     def get_possible_actions(self, state=None, agent='1'):
-        # ZMIANA: Jeśli state=None, pobieramy aktualny stan wewnętrzny, 
-        # zamiast zwracać wszystkie kierunki w ciemno.
         if state is None:
-            state = self._get_state()
-            # Musimy dostosować format stanu do tego, czego oczekuje dalsza część funkcji.
-            # Metoda _get_state zwraca (p1, p2, ...).
-            # Jeśli agent to '2', musimy pamiętać, która pozycja jest jego.
+            return [LEFT, DOWN, RIGHT, UP]
         
-        p1, p2, _, _, _ = state
-        
-        # Ustal, gdzie stoi dany agent
-        if agent == '1':
-            x, y = p1
-        else:
-            x, y = p2
+        my_pos, _, _, _, _ = state
+        x, y = my_pos
 
+        # pos1, pos2, _, _, _ = state
+        # agent_pos = pos1 if agent_id == '1' else pos2
+        # x, y = agent_pos
+        
         possible_actions = []
-        # Sprawdzamy każdy kierunek
         for action in [LEFT, DOWN, RIGHT, UP]:
             _x, _y = ACTIONS[action]
             new_x, new_y = x + _x, y + _y
             
-            # Sprawdzenie granic mapy
             if 0 <= new_x < self.width and 0 <= new_y < self.height:
-                # Sprawdzenie ściany (#)
                 if self.map[new_y][new_x] != '#':
                     possible_actions.append(action)
         
         return possible_actions
-    
-    def set_state(self, state):
-        """Szybkie ustawienie stanu bez deepcopy."""
-        pos1, pos2, treasures, hold1, hold2 = state
-        self.agent_pos['1'] = pos1
-        self.agent_pos['2'] = pos2
-        self.treasures = set(treasures)
-        self.agent_holding['1'] = hold1
-        self.agent_holding['2'] = hold2
-        # Resetujemy flagi informacyjne, choć nie są krytyczne dla logiki
-        self.agent_score = {'1': self.agent_score['1'], '2': self.agent_score['2']}
-
     
     def get_opponent_actions(self, agent_id, state=None):
         pos1, pos2, _, _, _ = state
@@ -222,25 +199,7 @@ class MultiTreasureHunterMDP:
             reward += GOAL_REWARD
 
         return reward
-        
-        # # my_pos, _, treasures, _, _ = current_state
-        # # x, y = my_pos
-        # # _x, _y = ACTIONS[action]
 
-        # my_pos, op_pos, treasures, my_hold, op_hold = next_state
-        # x, y = my_pos
-
-        # reward = STEP_REWARD
-        # if my_pos == op_pos:
-        #     reward += COLLISION_REWARD
-        # if self.map[y][x] == 'H':
-        #     reward += HOLE_REWARD
-        # if my_pos in self.treasures and not my_hold:
-        #     reward += GAIN_REWARD
-        # if my_pos == self.bases[agent] and my_hold:
-        #     reward += GOAL_REWARD
-
-        # return reward
 
 
     def _move(self, agent_id, action):
@@ -321,7 +280,7 @@ class MultiTreasureHunterMDP:
                     info[f'{agent_id}_drop_trap'] = True
                 
                 self.agent_pos[agent_id] = self.bases[agent_id]
-                rewards[agent_id] += HOLE_REWARD 
+                rewards[agent_id] += HOLE_REWARD
                 info[f'{agent_id}_trap'] = True
                 continue
 
@@ -377,7 +336,7 @@ class MultiTreasureHunterMDP:
         valid_positions = []
         for y in range(self.height):
             for x in range(self.width):
-                if self.original_map[y][x] != '#':
+                if self.map[y][x] != '#':
                     valid_positions.append((x, y))
         
         treasure_positions = []
@@ -410,16 +369,3 @@ class MultiTreasureHunterMDP:
 
     def render(self):
         pass
-        # grid = [row[:] for row in self.map]
-        # for x, y in self.treasures:
-        #     grid[y][x] = 'T'
-        # p1, p2 = self.agent_pos['1'], self.agent_pos['2']
-        # grid[p1[1]][p1[0]] = if self.agent_holding['1'] else '1'
-        # grid[p2[1]][p2[0]] = if self.agent_holding['2'] else '2'
-
-        # print("\n" + "="*40)
-        # for row in grid:
-        #     print(''.join(row))
-        # print(f"Skarby: {len(self.treasures)} | Punkty: 1:{self.agent_score['1']}  2:{self.agent_score['2']}")
-        # print(f"Trzyma: 1:{self.agent_holding['1']}  2:{self.agent_holding['2']}")
-        # print("="*40)
