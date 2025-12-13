@@ -5,6 +5,7 @@ Dwóch agentów MCTS uczących się online w grze
 import math
 import random
 import copy
+import time
 from treasure_env import MultiTreasureHunterMDP
 
 LEFT, DOWN, RIGHT, UP = 0, 1, 2, 3
@@ -228,7 +229,8 @@ def play_mcts_vs_mcts(env, num_simulations=100, max_steps=100):
     state = env.reset()
     render_game_state(env, 0, state)
     
-    input("\nNaciśnij ENTER aby rozpocząć...")
+    print("\nRozpoczynanie gry...")
+    time.sleep(2)
     
     total_reward_1 = 0
     total_reward_2 = 0
@@ -282,7 +284,8 @@ def play_mcts_vs_mcts(env, num_simulations=100, max_steps=100):
             print("="*70)
             break
         
-        input("\nNaciśnij ENTER aby kontynuować...")
+        # input("Enter by kontynuować...")
+        time.sleep(1)
     
     if not done:
         print("\n" + "="*70)
