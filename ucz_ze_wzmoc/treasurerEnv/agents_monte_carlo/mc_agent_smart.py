@@ -12,7 +12,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 LEFT, DOWN, RIGHT, UP = 0, 1, 2, 3
 ACTION_NAMES = {0: "LEFT", 1: "DOWN", 2: "RIGHT", 3: "UP"}
-
+MAX_DEPTH = 10
+SIMULATIONS = 500
 
 class MCTSNode:
     """Węzeł drzewa MCTS"""
@@ -52,7 +53,7 @@ class MCTSNode:
 
 class MCTSOnlineAgent:
     """Agent MCTS Online"""
-    def __init__(self, env, agent_id='1', num_simulations=100, max_depth=10):
+    def __init__(self, env, agent_id='1', num_simulations=100, max_depth=MAX_DEPTH):
         self.env = env
         self.agent_id = agent_id
         self.opponent_id = '2' if agent_id == '1' else '1'
@@ -183,8 +184,6 @@ class MCTSOnlineAgent:
         return total_reward - step_penalty
     
     def _opponent_policy(self, state):
-        """Prosta polityka przeciwnika"""
-        # Użyj przekonwertowanego stanu z perspektywy przeciwnika
         opponent_state = self.env.get_agent_state(state, self.opponent_id)
         possible_actions = self.env.get_possible_actions(opponent_state, self.opponent_id)
         
@@ -216,7 +215,6 @@ class MCTSOnlineAgent:
         return best_action
     
     def _create_temp_env(self, state):
-        """Tworzy tymczasowe środowisko"""
         temp_env = copy.deepcopy(self.env)
         pos1, pos2, treasures, hold1, hold2 = state
         temp_env.agent_pos = {'1': pos1, '2': pos2}
@@ -342,15 +340,15 @@ def play_mcts_vs_mcts(env, num_simulations=100, max_steps=100):
 
 if __name__ == "__main__":
     # map_lines = [
-    #     "A.....#",
-    #     "###...H",
+    #     "A....T#",
+    #     "#.#...H",
     #     "#..T..#",
-    #     "H...###",
-    #     "#.....B",
+    #     "H...#.#",
+    #     "#T....B",
     # ]
     map_lines = [
         "A...##",
-        "###..H",
+        "##...H",
         "#.#T.#",
         "H...##",
         "##...B",
@@ -369,4 +367,4 @@ if __name__ == "__main__":
     env = MultiTreasureHunterMDP(map_lines)
     
     # Uruchom grę
-    play_mcts_vs_mcts(env, num_simulations=500, max_steps=100)
+    play_mcts_vs_mcts(env, num_simulations=SIMULATIONS, max_steps=100)

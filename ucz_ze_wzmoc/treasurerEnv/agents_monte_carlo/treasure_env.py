@@ -302,8 +302,6 @@ class MultiTreasureHunterMDP:
     def is_terminal(self, state):
         pos1, pos2, treasures, hold1, hold2 = state
         
-        # Gra kończy się gdy nie ma skarbów na mapie i nikt nie trzyma skarbu
-        # (wszystkie skarby zostały zdeponowane)
         return len(treasures) == 0 and not hold1 and not hold2
 
     def _is_done(self):
