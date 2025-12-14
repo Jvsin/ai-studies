@@ -19,7 +19,7 @@ class MCTSNode:
     def __init__(self, state, parent=None, action=None):
         self.state = state
         self.parent = parent
-        self.action = action #action wykonana by tu przyjść
+        self.action = action
         self.children = []
         self.visits = 0
         self.value = 0.0
@@ -92,11 +92,10 @@ class MCTSOnlineAgent:
                 node = child
                 sim_state = next_state
             
-            # Simulation (Rollout)
             rollout_reward = self._rollout(sim_state)
             if _ == 88:
                 pass
-            # Backpropagation
+
             while node is not None:
                 node.visits += 1
                 node.value += rollout_reward
@@ -127,8 +126,6 @@ class MCTSOnlineAgent:
         return next_state, rewards[self.agent_id]
     
     def _rollout(self, state, depth=0):
-        """Rollout z heurystyką - agent zmierza do celu"""
-        # Jeśli stan początkowy jest już terminalny, zwróć 0 (brak dalszych nagród)
         if self.env.is_terminal(state):
             return 100.0
         
@@ -136,7 +133,7 @@ class MCTSOnlineAgent:
         discount = 1.0
         current_state = state
         current_depth = depth
-        steps_taken = 0  # Licznik kroków
+        steps_taken = 0 
         
         while current_depth < self.max_depth:
             agent_state = self.env.get_agent_state(current_state, self.agent_id)
@@ -145,19 +142,14 @@ class MCTSOnlineAgent:
             if not possible_actions:
                 break
             
-            # Rozpakuj stan z perspektywy agenta
             my_pos, opponent_pos, treasures, my_holding, opponent_holding = agent_state
             my_base = self.env.bases[self.agent_id]
             
-            # Heurystyka: określ cel
             if my_holding:
-                # Mam skarb -> idź do bazy
                 target = my_base
             elif treasures:
-                # Nie mam skarbu -> idź do najbliższego skarbu
                 target = min(treasures, key=lambda t: abs(t[0] - my_pos[0]) + abs(t[1] - my_pos[1]))
             else:
-                # Brak skarbów -> losowy ruch
                 my_action = random.choice(possible_actions)
                 next_state, reward = self._simulate_action(current_state, my_action)
                 total_reward += discount * reward
@@ -167,7 +159,6 @@ class MCTSOnlineAgent:
                 # discount *= 0.99
                 continue
             
-            # Wybierz akcję która zbliża do celu (Manhattan distance)
             best_action = possible_actions[0]
             best_dist = float('inf')
             
@@ -179,7 +170,6 @@ class MCTSOnlineAgent:
                     best_dist = dist
                     best_action = action
             
-            # Symuluj wybraną akcję
             next_state, reward = self._simulate_action(current_state, best_action)
             total_reward += discount * reward
             current_state = next_state
@@ -189,8 +179,6 @@ class MCTSOnlineAgent:
             if self.env.is_terminal(current_state):
                 break
         
-        # Kara za liczbę kroków - nieliniowa, znacznie większa dla dużej liczby kroków
-        # Dla 1-2 kroków kara minimalna, dla ~10 kroków znacznie większa
         step_penalty = (steps_taken ** 1.5) * 0.5
         return total_reward - step_penalty
     
@@ -203,7 +191,6 @@ class MCTSOnlineAgent:
         if not possible_actions:
             return 0
         
-        # opponent_state jest już z perspektywy przeciwnika
         # (opponent_pos, my_pos, treasures, opponent_hold, my_hold)
         opponent_pos, _, treasures, opponent_holding, _ = opponent_state
         opponent_base = self.env.bases[self.opponent_id]
