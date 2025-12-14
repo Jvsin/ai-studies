@@ -301,16 +301,10 @@ class MultiTreasureHunterMDP:
 
     def is_terminal(self, state):
         pos1, pos2, treasures, hold1, hold2 = state
-
-        check_treasure = len(treasures) == 0
-
-        check_both_home = (
-            pos1 == self.bases['1'] and
-            pos2 == self.bases['2'] and
-            not hold1 and not hold2
-        )
-
-        return check_treasure and check_both_home
+        
+        # Gra kończy się gdy nie ma skarbów na mapie i nikt nie trzyma skarbu
+        # (wszystkie skarby zostały zdeponowane)
+        return len(treasures) == 0 and not hold1 and not hold2
 
     def _is_done(self):
         # check_trap1 = self.map[self.agent_pos['1'][1]][self.agent_pos['1'][0]] == 'H'

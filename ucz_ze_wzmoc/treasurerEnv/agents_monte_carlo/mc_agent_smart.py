@@ -7,6 +7,8 @@ import random
 import copy
 import time
 from treasure_env import MultiTreasureHunterMDP
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 LEFT, DOWN, RIGHT, UP = 0, 1, 2, 3
 ACTION_NAMES = {0: "LEFT", 1: "DOWN", 2: "RIGHT", 3: "UP"}
@@ -62,7 +64,8 @@ class MCTSOnlineAgent:
         root = MCTSNode(state)
         agent_state = self.env.get_agent_state(state, self.agent_id)
         root.untried_actions = self.env.get_possible_actions(agent_state, self.agent_id)
-        
+        if agent_state[4] == True:
+            pass
         if not root.untried_actions:
             return 0
         
@@ -91,7 +94,8 @@ class MCTSOnlineAgent:
             
             # Simulation (Rollout)
             rollout_reward = self._rollout(sim_state)
-            
+            if _ == 88:
+                pass
             # Backpropagation
             while node is not None:
                 node.visits += 1
@@ -102,13 +106,17 @@ class MCTSOnlineAgent:
         # return best_child.action if best_child else root.untried_actions[0]
         if self.agent_id == '1':
             pass
-        best_child = max(root.children, key=lambda c: c.visits)
+        if self.agent_id == '2':
+            pass
+        best_child = root.most_visited_child()
+        # best_child = max(root.children, key=lambda c: c.visits)
         return best_child.action
     
     def _simulate_action(self, state, my_action):
         """Symuluje akcję"""
         opponent_action = self._opponent_policy(state)
         
+        # action1, action2 = my_action, opponent_action
         if self.agent_id == '1':
             action1, action2 = my_action, opponent_action
         else:
@@ -120,12 +128,17 @@ class MCTSOnlineAgent:
     
     def _rollout(self, state, depth=0):
         """Rollout z heurystyką - agent zmierza do celu"""
+        # Jeśli stan początkowy jest już terminalny, zwróć 0 (brak dalszych nagród)
+        if self.env.is_terminal(state):
+            return 100.0
+        
         total_reward = 0.0
         discount = 1.0
         current_state = state
         current_depth = depth
+        steps_taken = 0  # Licznik kroków
         
-        while not self.env.is_terminal(current_state) and current_depth < self.max_depth:
+        while current_depth < self.max_depth:
             agent_state = self.env.get_agent_state(current_state, self.agent_id)
             possible_actions = self.env.get_possible_actions(agent_state, self.agent_id)
             
@@ -150,7 +163,8 @@ class MCTSOnlineAgent:
                 total_reward += discount * reward
                 current_state = next_state
                 current_depth += 1
-                discount *= 0.99
+                steps_taken += 1
+                # discount *= 0.99
                 continue
             
             # Wybierz akcję która zbliża do celu (Manhattan distance)
@@ -170,9 +184,15 @@ class MCTSOnlineAgent:
             total_reward += discount * reward
             current_state = next_state
             current_depth += 1
-            discount *= 0.99
+            steps_taken += 1
+            # discount *= 0.99
+            if self.env.is_terminal(current_state):
+                break
         
-        return total_reward
+        # Kara za liczbę kroków - nieliniowa, znacznie większa dla dużej liczby kroków
+        # Dla 1-2 kroków kara minimalna, dla ~10 kroków znacznie większa
+        step_penalty = (steps_taken ** 1.5) * 0.5
+        return total_reward - step_penalty
     
     def _opponent_policy(self, state):
         """Prosta polityka przeciwnika"""
@@ -263,7 +283,6 @@ def render_game_state(env, step_num, state, action1=None, action2=None, rewards=
 
 
 def play_mcts_vs_mcts(env, num_simulations=100, max_steps=100):
-    """Gra MCTS vs MCTS"""
     agent1 = MCTSOnlineAgent(env, '1', num_simulations=num_simulations)
     agent2 = MCTSOnlineAgent(env, '2', num_simulations=num_simulations)
     
@@ -349,11 +368,6 @@ if __name__ == "__main__":
         "H...##",
         "##...B",
     ]
-    
-    print("="*70)
-    print("MONTE CARLO TREE SEARCH ONLINE")
-    print("Dwóch agentów MCTS uczących się w grze")
-    print("="*70)
     
     print("\nMapa:")
     for line in map_lines:
