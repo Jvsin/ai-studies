@@ -1,7 +1,3 @@
-"""
-Monte Carlo Tree Search Online dla środowiska TreasureHunter
-Dwóch agentów MCTS uczących się online w grze
-"""
 import math
 import random
 import copy
@@ -16,7 +12,6 @@ MAX_DEPTH = 10
 SIMULATIONS = 500
 
 class MCTSNode:
-    """Węzeł drzewa MCTS"""
     def __init__(self, state, parent=None, action=None):
         self.state = state
         self.parent = parent
@@ -32,7 +27,6 @@ class MCTSNode:
         return len(self.untried_actions) == 0
     
     def best_child(self, c_param=1.41):
-        """UCB1"""
         choices_weights = []
         for child in self.children:
             if child.visits == 0:
@@ -52,7 +46,6 @@ class MCTSNode:
 
 
 class MCTSOnlineAgent:
-    """Agent MCTS Online"""
     def __init__(self, env, agent_id='1', num_simulations=100, max_depth=MAX_DEPTH):
         self.env = env
         self.agent_id = agent_id
@@ -61,7 +54,6 @@ class MCTSOnlineAgent:
         self.max_depth = max_depth
         
     def select_action(self, state):
-        """Wybiera akcję za pomocą MCTS"""
         root = MCTSNode(state)
         agent_state = self.env.get_agent_state(state, self.agent_id)
         root.untried_actions = self.env.get_possible_actions(agent_state, self.agent_id)
@@ -113,7 +105,6 @@ class MCTSOnlineAgent:
         return best_child.action
     
     def _simulate_action(self, state, my_action):
-        """Symuluje akcję"""
         opponent_action = self._opponent_policy(state)
         
         # action1, action2 = my_action, opponent_action
@@ -348,8 +339,8 @@ if __name__ == "__main__":
     # ]
     map_lines = [
         "A...##",
-        "##...H",
-        "#.#T.#",
+        "##.T.H",
+        "#.#..#",
         "H...##",
         "##...B",
     ]
@@ -366,5 +357,4 @@ if __name__ == "__main__":
     
     env = MultiTreasureHunterMDP(map_lines)
     
-    # Uruchom grę
     play_mcts_vs_mcts(env, num_simulations=SIMULATIONS, max_steps=100)

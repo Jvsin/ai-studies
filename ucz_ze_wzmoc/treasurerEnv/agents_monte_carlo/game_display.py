@@ -69,23 +69,19 @@ def play_game_step_by_step(env, policy1, policy2, max_steps=100):
     """
     state = env.reset()
     
-    # Początkowy stan
-    render_game_state(env, 0, state) # Poprawiłem kolejność argumentów (step_num był źle w oryginale wywołania)
+    render_game_state(env, 0, state) 
     input("\nNaciśnij ENTER aby wykonać pierwszy krok...")
     
     total_reward_1 = 0
     total_reward_2 = 0
     
     for step in range(1, max_steps + 1):
-        # Pobierz stan z perspektywy każdego agenta (do odpytania polityki)
         agent1_state = env.get_agent_state(state, '1')
         agent2_state = env.get_agent_state(state, '2')
         
-        # --- AGENT 1 ---
         if agent1_state in policy1:
             action1 = policy1[agent1_state]
         else:
-            # POPRAWKA: Przekazujemy 'state' (globalny), a nie 'agent1_state'
             actions1 = env.get_possible_actions(state, '1')
             action1 = random.choice(actions1) if actions1 else 0
             print(f"  [INFO] Agent 1: Stan nieznany, wybrano losową akcję")
@@ -94,8 +90,6 @@ def play_game_step_by_step(env, policy1, policy2, max_steps=100):
         if agent2_state in policy2:
             action2 = policy2[agent2_state]
         else:
-            # POPRAWKA: Przekazujemy 'state' (globalny), a nie 'agent2_state'
-            # Wcześniej Agent 2 sprawdzał ruchy dla pozycji Agenta 1!
             actions2 = env.get_possible_actions(state, '2')
             action2 = random.choice(actions2) if actions2 else 0
             print(f"  [INFO] Agent 2: Stan nieznany, wybrano losową akcję")

@@ -1,4 +1,5 @@
 import random
+import time
 
 def render_game_state(env, step_num, state, action1=None, action2=None, rewards=None):
     """
@@ -64,66 +65,51 @@ def render_game_state(env, step_num, state, action1=None, action2=None, rewards=
 
 
 def play_game_step_by_step(env, policy1, policy2, max_steps=100):
-    """
-    Rozgrywa grę krok po kroku, wyświetlając stan po każdym ruchu.
-    """
     state = env.reset()
     
-    # Początkowy stan
-    render_game_state(env, 0, state) # Poprawiłem kolejność argumentów (step_num był źle w oryginale wywołania)
+    render_game_state(env, 0, state)
     input("\nNaciśnij ENTER aby wykonać pierwszy krok...")
     
     total_reward_1 = 0
     total_reward_2 = 0
     
     for step in range(1, max_steps + 1):
-        # Pobierz stan z perspektywy każdego agenta (do odpytania polityki)
         agent1_state = env.get_agent_state(state, '1')
         agent2_state = env.get_agent_state(state, '2')
         
-        # --- AGENT 1 ---
         if agent1_state in policy1:
             action1 = policy1[agent1_state]
         else:
-            # POPRAWKA: Przekazujemy 'state' (globalny), a nie 'agent1_state'
             actions1 = env.get_possible_actions(state, '1')
             action1 = random.choice(actions1) if actions1 else 0
-            print(f"  [INFO] Agent 1: Stan nieznany, wybrano losową akcję")
         
-        # --- AGENT 2 ---
         if agent2_state in policy2:
             action2 = policy2[agent2_state]
         else:
-            # POPRAWKA: Przekazujemy 'state' (globalny), a nie 'agent2_state'
-            # Wcześniej Agent 2 sprawdzał ruchy dla pozycji Agenta 1!
             actions2 = env.get_possible_actions(state, '2')
             action2 = random.choice(actions2) if actions2 else 0
-            print(f"  [INFO] Agent 2: Stan nieznany, wybrano losową akcję")
         
-        # Wykonaj krok
         state, rewards, done, info = env.step(action1, action2)
         total_reward_1 += rewards['1']
         total_reward_2 += rewards['2']
         
-        # Renderuj stan po ruchu
         render_game_state(env, step, state, action1, action2, rewards)
         
-        # Wyświetl specjalne zdarzenia
         if info:
             if info.get('collision'):
-                print("\n  ⚠ KOLIZJA! Obaj agenci wrócili do baz!")
+                print("\n  KOLIZJA! Obaj agenci wrócili do baz!")
             if info.get('1_pick'):
-                print("\n  ✓ Agent 1 podniósł skarb!")
+                print("\n  Agent 1 podniósł skarb!")
             if info.get('2_pick'):
-                print("\n  ✓ Agent 2 podniósł skarb!")
+                print("\n  Agent 2 podniósł skarb!")
             if info.get('1_deposit'):
-                print("\n  ★ Agent 1 zdeponował skarb! +1 punkt")
+                print("\n  Agent 1 zdeponował skarb! +1 punkt")
             if info.get('2_deposit'):
-                print("\n  ★ Agent 2 zdeponował skarb! +1 punkt")
+                print("\n  Agent 2 zdeponował skarb! +1 punkt")
             if info.get('1_trap'):
-                print("\n  ✗ Agent 1 wpadł w pułapkę!")
+                print("\n  Agent 1 wpadł w pułapkę!")
             if info.get('2_trap'):
-                print("\n  ✗ Agent 2 wpadł w pułapkę!")
+                print("\n  Agent 2 wpadł w pułapkę!")
         
         if done:
             print("\n" + "="*70)
@@ -137,20 +123,17 @@ def play_game_step_by_step(env, policy1, policy2, max_steps=100):
             print(f"  Agent 2: {env.agent_score['2']}")
             
             if env.agent_score['1'] > env.agent_score['2']:
-                print(f"\n🏆 ZWYCIĘZCA: Agent 1!")
+                print(f"\nZWYCIĘZCA: Agent 1!")
             elif env.agent_score['2'] > env.agent_score['1']:
-                print(f"\n🏆 ZWYCIĘZCA: Agent 2!")
+                print(f"\n ZWYCIĘZCA: Agent 2!")
             else:
-                print(f"\n🤝 REMIS!")
+                print(f"\nREMIS!")
             print("="*70)
             break
         
-        input("\nNaciśnij ENTER aby wykonać kolejny krok...")
+        # input("\nNaciśnij ENTER")
+        time.sleep(1)
     
     if not done:
-        print("\n" + "="*70)
-        print("OSIĄGNIĘTO MAKSYMALNĄ LICZBĘ KROKÓW")
-        print("="*70)
-        print(f"\nKońcowe punkty:")
         print(f"  Agent 1: {env.agent_score['1']}")
         print(f"  Agent 2: {env.agent_score['2']}")

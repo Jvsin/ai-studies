@@ -57,23 +57,19 @@ class MultiTreasureHunterMDP:
     
     def get_agent_state(self, state, agent_id):
         pos1, pos2, treasures, hold1, hold2 = state
-        
-        if agent_id == '1':
-            return (pos1, pos2, frozenset(treasures), hold1, hold2)
-        else:
-            return (pos2, pos1, frozenset(treasures), hold2, hold1)
+        # Return the same state format for both agents
+        # Each agent handles their own perspective based on agent_id
+        return (pos1, pos2, frozenset(treasures), hold1, hold2)
 
 
     def get_possible_actions(self, state=None, agent='1'):
         if state is None:
             return [LEFT, DOWN, RIGHT, UP]
         
-        my_pos, _, _, _, _ = state
-        x, y = my_pos
-
-        # pos1, pos2, _, _, _ = state
-        # agent_pos = pos1 if agent_id == '1' else pos2
-        # x, y = agent_pos
+        pos1, pos2, _, _, _ = state
+        # Choose the correct agent position based on agent_id
+        agent_pos = pos1 if agent == '1' else pos2
+        x, y = agent_pos
         
         possible_actions = []
         for action in [LEFT, DOWN, RIGHT, UP]:
