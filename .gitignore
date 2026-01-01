@@ -10,6 +10,7 @@
 /psi2025/lab8/.ttt
 /psi2025/lab8/.dll
 /psi2025/lab8/.pyc
+/msi/data/MNIST/raw
 *.pyc
 DLF_winter_2025_shared/datasets
 DLF_winter_2025_shared/
