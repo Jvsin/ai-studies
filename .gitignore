@@ -20,3 +20,4 @@ datasets/temp
 # *.png
 *.jpeg
 *.gif
+.venv/
