@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This network was created in GeNIe Academic, which can be used for academic teaching and research purposes only -->
+<smile version="1.0" id="Network1" numsamples="10000" discsamples="10000">
+	<nodes>
+		<cpt id="burglary">
+			<state id="True" />
+			<state id="False" />
+			<probabilities>0.08 0.92</probabilities>
+		</cpt>
+		<cpt id="earthquake">
+			<state id="True" />
+			<state id="False" />
+			<probabilities>0.008200000000000001 0.9918</probabilities>
+		</cpt>
+		<cpt id="alarm">
+			<state id="True" />
+			<state id="False" />
+			<parents>burglary earthquake</parents>
+			<probabilities>0.97 0.03 0.95 0.05 0.2 0.8 0.0001 0.9999</probabilities>
+		</cpt>
+		<cpt id="radio">
+			<state id="True" />
+			<state id="False" />
+			<parents>earthquake</parents>
+			<probabilities>1 0 0.02 0.98</probabilities>
+		</cpt>
+		<cpt id="watson">
+			<state id="True" />
+			<state id="False" />
+			<parents>alarm</parents>
+			<probabilities>0.95 0.05 0 1</probabilities>
+		</cpt>
+	</nodes>
+	<extensions>
+		<genie version="1.0" app="GeNIe 5.0.5310.0 ACADEMIC" name="Network1">
+			<node id="burglary">
+				<name>Burglary</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>236 128 351 207</position>
+			</node>
+			<node id="alarm">
+				<name>Alarm</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>318 243 439 319</position>
+			</node>
+			<node id="earthquake">
+				<name>Earthquake</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>411 128 532 206</position>
+			</node>
+			<node id="radio">
+				<name>Radio News</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>494 243 615 314</position>
+			</node>
+			<node id="watson">
+				<name>Watson Call</name>
+				<interior color="e5f6f7" />
+				<outline color="000080" />
+				<font color="000000" name="Arial" size="8" />
+				<position>326 374 442 448</position>
+			</node>
+		</genie>
+	</extensions>
+</smile>
