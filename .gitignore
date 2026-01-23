@@ -12,12 +12,14 @@
 /psi2025/lab8/.pyc
 /msi/data/MNIST/raw
 /uzw/assets/images
+/uzw/UZW_race/venv
+venv
 *.pyc
 DLF_winter_2025_shared/datasets
 DLF_winter_2025_shared/
 datasets/temp
-# *.jpg
-# *.png
+*.jpg
+*.png
 *.jpeg
 *.gif
 .venv/
