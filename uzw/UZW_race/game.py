@@ -203,55 +203,29 @@ class PlayerCar(AbstractCar):
 
 
 class PlayerCar2(AbstractCar):
-
     def __init__(self, name):
-        # Call the AbstractCar __init__ method
         super().__init__(name)
+        from myAgent import MyAgent 
+        self.agent = MyAgent(input_dims=17, n_actions=5) 
+        self.agent.load()
 
     def choose_action(self, state):
-        """
-        Determines the next action for the car based on the current state of the environment.
-
-        Parameters:
-            state (list): A 3-element list representing the car's current state:
-                - state[0]: A list of 8 float values representing distances to the track border
-                            in 8 directions (every 45 degrees, starting from forward).
-                - state[1]: A list of 8 float values representing distances to the nearest car
-                           in the same 8 directions.
-                - state[2]: A 2-element list representing progress information:
-                            - state[2][0]: The index of the closest checkpoint.
-                            - state[2][1]: The car's progress, e.g., distance to the next checkpoint
-                                           or normalized progress value.
-
-        Returns:
-            - "forward": Move the car forward.
-            - "backward": Move the car backward.
-            - "left": Turn the car left.
-            - "right": Turn the car right.
-            - "stop": Reduce the car's speed.
-            """
-
-        """INSERT YOUR CODE HERE"""
-
-        keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_w]:
-            return "forward"
-        elif keys[pygame.K_s]:
-            return "backward"
-        elif keys[pygame.K_a]:
-            return "left"
-        elif keys[pygame.K_d]:
-            return "right"
-        else:
-            return "stop"
+        
+        full_state = [state[0], state[1], state[2], self.vel]
+        
+        # eval_mode=True wyłącza epsilon-greedy (zawsze najlepsza akcja)
+        action_idx = self.agent.choose_action(full_state, eval_mode=True)
+        
+        actions = ["forward", "backward", "left", "right", "stop"]
+        return actions[action_idx]
 
 def main():
 
     final_results = dict()
 
     #initializing players - it is possible to play up to 4 players together
-    players = [PlayerCar("P1"), PlayerCar2("P2"), PlayerCar("P1"), PlayerCar2("P2")]
+    # players = [PlayerCar("P1"), PlayerCar2("P2"), PlayerCar("P1"), PlayerCar2("P2")]
+    players = [PlayerCar2("P2"), PlayerCar2("P2"), PlayerCar2("P3")]
 
     for p in players:
         final_results[p.get_name()] = 0
