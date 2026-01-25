@@ -2,136 +2,104 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-import random
 import os
-from collections import deque
 
-class DuelingDQN(nn.Module):
-    def __init__(self, input_size, output_size):
-        super(DuelingDQN, self).__init__()
-        
-        self.feature_layer = nn.Sequential(
-            nn.Linear(input_size, 128),
+
+class NeuralModel(nn.Module):
+    def __init__(self, input_size=18, output_size=5): 
+        super(NeuralModel, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_size, 256),
             nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU()
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, output_size)
         )
-        
-        self.value_stream = nn.Linear(128, 1) # ocenia jak dobrze być w tym stanie
-        self.advantage_stream = nn.Linear(128, output_size) # ocenia następne akcje 
 
     def forward(self, x):
-        features = self.feature_layer(x)
-        values = self.value_stream(features)
-        advantages = self.advantage_stream(features)
-
-        # agregacja z dwóch ścieżek
-        return values + (advantages - advantages.mean(dim=1, keepdim=True))
-
-class ReplayBuffer:
-    def __init__(self, capacity):
-        self.buffer = deque(maxlen=capacity)
-    
-    def push(self, state, action, reward, next_state, done):
-        self.buffer.append((state, action, reward, next_state, done))
-    
-    def sample(self, batch_size):
-        return random.sample(self.buffer, batch_size)
-    
-    def __len__(self):
-        return len(self.buffer)
+        return self.net(x)
 
 class MyAgent:
-    def __init__(self, input_dims=17, n_actions=5, lr=0.0001, gamma=0.99, epsilon=1.0, epsilon_dec=0.995, epsilon_min=0.05):
-        self.input_dims = input_dims
-        self.n_actions = n_actions
-        self.lr = lr
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.epsilon_dec = epsilon_dec
-        self.epsilon_min = epsilon_min
-        self.action_space = [0, 1, 2, 3, 4]
-
+    def __init__(self):
+        self.best_reward = -9999
+        self.path = "records/best_model.pth" 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.path = "records/race_model.pth"
-
-        self.policy_net = DuelingDQN(input_dims, n_actions).to(self.device)
-        self.target_net = DuelingDQN(input_dims, n_actions).to(self.device)
-        self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.target_net.eval()
-
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
-        self.criterion = nn.MSELoss()
         
-        self.memory = ReplayBuffer(50000)
-        self.best_reward = -float('inf')
-
-    def normalize_state(self, state):
-        walls = np.array(state[0], dtype=np.float32) / 1000.0 
-        cars = np.array(state[1], dtype=np.float32) / 200.0
-        velocity = np.array([state[3] / 10.0], dtype=np.float32) 
-
-        return np.concatenate([walls, cars, velocity])
-
-    def choose_action(self, state, eval_mode=False):
-        if not eval_mode and np.random.random() < self.epsilon:
-            return np.random.choice(self.action_space)
+        self.model = NeuralModel(input_size=18, output_size=5).to(self.device)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001) 
+        self.criterion = nn.MSELoss() 
         
-        state_tensor = torch.tensor(self.normalize_state(state), dtype=torch.float32).unsqueeze(0).to(self.device)
-        with torch.no_grad():
-            actions = self.policy_net(state_tensor)
-            return torch.argmax(actions).item()
+        self.load()
 
-    def store_transition(self, state, action, reward, next_state, done):
-        self.memory.push(self.normalize_state(state), action, reward, self.normalize_state(next_state), done)
+    def evaluate_state(self, state):
+        walls = np.array(state[0], dtype=np.float32).flatten() / 1000.0
+        cars = np.array(state[1], dtype=np.float32).flatten() / 300.0
+        
+        checkpoints_len = len(state[3]) if isinstance(state[3], list) else 1.0
+        if checkpoints_len == 0: checkpoints_len = 1.0
+        checkpoint_progress = np.array([state[2][0] / float(checkpoints_len)], dtype=np.float32)
+        
+        velocity = np.array([state[4]], dtype=np.float32).flatten() / 10.0
 
-    def learn(self, batch_size=64):
-        if len(self.memory) < batch_size:
-            return
+        return np.concatenate([walls, cars, checkpoint_progress, velocity])
 
-        transitions = self.memory.sample(batch_size)
-        states, actions, rewards, next_states, dones = zip(*transitions)
 
-        states = torch.tensor(np.array(states), dtype=torch.float32).to(self.device)
-        actions = torch.tensor(actions, dtype=torch.int64).unsqueeze(1).to(self.device)
-        rewards = torch.tensor(rewards, dtype=torch.float32).unsqueeze(1).to(self.device)
-        next_states = torch.tensor(np.array(next_states), dtype=torch.float32).to(self.device)
-        dones = torch.tensor(dones, dtype=torch.bool).unsqueeze(1).to(self.device)
-
-        # Obliczanie Q-values dla bieżących stanów
-        q_values = self.policy_net(states).gather(1, actions)
-
-        # Obliczanie Target Q-values (Double DQN logic albo zwykły DQN)
-        with torch.no_grad():
-            next_q_values = self.target_net(next_states).max(1, keepdim=True)[0]
-            next_q_values[dones] = 0.0
-            target_q_values = rewards + self.gamma * next_q_values
-
-        loss = self.criterion(q_values, target_q_values)
-
+    def fit(self, X, y):
+        self.model.train()
+        
+        X_np = np.array([self.evaluate_state(x) for x in X], dtype=np.float32)
+        y_np = np.array(y, dtype=np.float32)
+        
+        X_tensor = torch.tensor(X_np).to(self.device)
+        y_tensor = torch.tensor(y_np).to(self.device)
+        
         self.optimizer.zero_grad()
+        outputs = self.model(X_tensor)
+        loss = self.criterion(outputs, y_tensor)
+        
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.optimizer.step()
+        return loss.item()
 
-        # Epsilon decay
-        # self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_dec)
+    def predict(self, state):
+        self.model.eval()
+        with torch.no_grad():
+            features = self.evaluate_state(state)
+            features_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).to(self.device)
+            return self.model(features_tensor).cpu().numpy()[0]
 
-    def decrease_epsilon(self):
-        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_dec)
-
-    def update_target_network(self):
-        self.target_net.load_state_dict(self.policy_net.state_dict())
-
-    def save(self, reward):
-        if reward > self.best_reward:
-            self.best_reward = reward
-            torch.save(self.policy_net.state_dict(), self.path)
-            print(f"Model saved with reward: {reward}")
+    def predict_batch(self, states):
+        self.model.eval()
+        with torch.no_grad():
+            features = np.array([self.evaluate_state(s) for s in states], dtype=np.float32)
+            features_tensor = torch.tensor(features).to(self.device)
+            return self.model(features_tensor).cpu().numpy()
+    
+    def save(self, current_reward):
+        if current_reward > self.best_reward:
+            self.best_reward = current_reward
+            save_data = {
+                "model_state": self.model.state_dict(),
+                "optimizer_state": self.optimizer.state_dict(),
+                "best_reward": self.best_reward
+            }
+            if not os.path.exists('records'):
+                os.makedirs('records')
+            torch.save(save_data, self.path)
+            print(f"Nowy rekord: {self.best_reward:.2f}")
 
     def load(self):
         if os.path.exists(self.path):
-            self.policy_net.load_state_dict(torch.load(self.path))
-            self.target_net.load_state_dict(self.policy_net.state_dict())
-            print("Model loaded.")
-            self.epsilon = 0.7
+            try:
+                checkpoint = torch.load(self.path, map_location=self.device, weights_only=False)
+                
+                self.model.load_state_dict(checkpoint["model_state"])
+                self.optimizer.load_state_dict(checkpoint["optimizer_state"])
+                self.best_reward = checkpoint.get("best_reward", float('-inf'))
+                print(f"Załadowano model. Rekord: {self.best_reward:.2f}")
+            except Exception as e:
+                print(f"Błąd ładowania: {e}")
+                print("Startuję od zera.")
