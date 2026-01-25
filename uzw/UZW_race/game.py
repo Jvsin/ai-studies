@@ -213,7 +213,6 @@ class PlayerCar2(AbstractCar):
         
         full_state = [state[0], state[1], state[2], self.vel]
         
-        # eval_mode=True wyłącza epsilon-greedy (zawsze najlepsza akcja)
         action_idx = self.agent.choose_action(full_state, eval_mode=True)
         
         actions = ["forward", "backward", "left", "right", "stop"]
@@ -224,8 +223,8 @@ def main():
     final_results = dict()
 
     #initializing players - it is possible to play up to 4 players together
-    # players = [PlayerCar("P1"), PlayerCar2("P2"), PlayerCar("P1"), PlayerCar2("P2")]
-    players = [PlayerCar2("P2"), PlayerCar2("P2"), PlayerCar2("P3")]
+    players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P3")]
+    # players = [PlayerCar2("P2"), PlayerCar2("P2"), PlayerCar2("P3")]
 
     for p in players:
         final_results[p.get_name()] = 0

@@ -17,13 +17,15 @@ class DuelingDQN(nn.Module):
             nn.ReLU()
         )
         
-        self.value_stream = nn.Linear(128, 1)
-        self.advantage_stream = nn.Linear(128, output_size)
+        self.value_stream = nn.Linear(128, 1) # ocenia jak dobrze być w tym stanie
+        self.advantage_stream = nn.Linear(128, output_size) # ocenia następne akcje 
 
     def forward(self, x):
         features = self.feature_layer(x)
         values = self.value_stream(features)
         advantages = self.advantage_stream(features)
+
+        # agregacja z dwóch ścieżek
         return values + (advantages - advantages.mean(dim=1, keepdim=True))
 
 class ReplayBuffer:
@@ -40,7 +42,7 @@ class ReplayBuffer:
         return len(self.buffer)
 
 class MyAgent:
-    def __init__(self, input_dims=18, n_actions=5, lr=0.0001, gamma=0.99, epsilon=1.0, epsilon_dec=0.995, epsilon_min=0.05):
+    def __init__(self, input_dims=17, n_actions=5, lr=0.0001, gamma=0.99, epsilon=1.0, epsilon_dec=0.995, epsilon_min=0.05):
         self.input_dims = input_dims
         self.n_actions = n_actions
         self.lr = lr
@@ -48,12 +50,11 @@ class MyAgent:
         self.epsilon = epsilon
         self.epsilon_dec = epsilon_dec
         self.epsilon_min = epsilon_min
-        self.action_space = [0, 1, 2, 3, 4] # Forward, Backward, Left, Right, Stop
+        self.action_space = [0, 1, 2, 3, 4]
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.path = "records/race_model.pth"
 
-        # Policy Network i Target Network
         self.policy_net = DuelingDQN(input_dims, n_actions).to(self.device)
         self.target_net = DuelingDQN(input_dims, n_actions).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -110,11 +111,13 @@ class MyAgent:
 
         self.optimizer.zero_grad()
         loss.backward()
-        # Gradient clipping dla stabilności
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
         self.optimizer.step()
 
         # Epsilon decay
+        # self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_dec)
+
+    def decrease_epsilon(self):
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_dec)
 
     def update_target_network(self):
@@ -131,4 +134,4 @@ class MyAgent:
             self.policy_net.load_state_dict(torch.load(self.path))
             self.target_net.load_state_dict(self.policy_net.state_dict())
             print("Model loaded.")
-            self.epsilon = 0.05 # Jeśli ładujemy do gry, minimalna eksploracja
+            self.epsilon = 0.7
