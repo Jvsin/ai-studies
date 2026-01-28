@@ -23,3 +23,4 @@ datasets/temp
 *.jpeg
 *.gif
 .venv/
+*.pth
