@@ -229,7 +229,7 @@ def main():
     final_results = dict()
 
     #initializing players - it is possible to play up to 4 players together
-    players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P3")]
+    players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P4")]
     # players = [PlayerCar2("P2"), PlayerCar2("P2"), PlayerCar2("P3")]
 
     for p in players:

@@ -67,7 +67,7 @@ def train():
                     next_state = car.get_state([])
                     scores[i] += reward
                     
-                    # Zapisz do pamięci: (stan, akcja, nagroda, nowy_stan, czy_koniec)
+                    # memory
                     memory.append((states[i], actions[i], reward, next_state, done))
                     states[i] = next_state
                     
@@ -83,8 +83,8 @@ def train():
                 batch_next_states = [m[3] for m in mini_batch]
                 batch_is_done = [m[4] for m in mini_batch]
                 
-                current_qs = agent.predict_batch(batch_states) # Obecne przewidywania
-                next_qs = agent.predict_batch(batch_next_states) # Co przewidujemy po ruchu
+                current_qs = agent.predict_batch(batch_states) # przewidywania dla aktualnych stanów
+                next_qs = agent.predict_batch(batch_next_states) # przewidywania dla następnych 
                 
                 X = batch_states
                 y = current_qs.copy()
@@ -98,7 +98,6 @@ def train():
                     # aktualizujemy tylko te akcje, którą wykonaliśmy
                     y[i][batch_actions[i]] = target
                 
-                # Trenujemy sieć!
                 agent.fit(X, y)
 
             if render:

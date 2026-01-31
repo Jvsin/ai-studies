@@ -50,9 +50,9 @@ class TrainingCar(AbstractCar):
             reward -= NO_MOVE_REWARD
 
         target_ckpt = CHECKPOINTS[self.next_checkpoint_id]
-        dist_to_ckpt = math.hypot(self.x - target_ckpt[0], self.y - target_ckpt[1])
+        dist_to_checkpoint = math.hypot(self.x - target_ckpt[0], self.y - target_ckpt[1])
         
-        if dist_to_ckpt < 50:
+        if dist_to_checkpoint < 50:
             reward += CHECKPOINT_REWARD
             self.next_checkpoint_id = (self.next_checkpoint_id + 1) % len(CHECKPOINTS)
             
@@ -80,7 +80,8 @@ def generate_grid_cars(n_cars, car_class, car_img):
     
     start_positions = [
         (180, 200), (150, 200), 
-        (180, 160), (150, 160)
+        (180, 160), (150, 160),
+        # (180, 120), (150, 120)
     ]
     for i in range(n_cars):
         pos = start_positions[i % len(start_positions)]

@@ -51,7 +51,6 @@ class MyAgent:
         
         X_np = np.array([self.evaluate_state(x) for x in X], dtype=np.float32)
         y_np = np.array(y, dtype=np.float32)
-        
         X_tensor = torch.tensor(X_np).to(self.device)
         y_tensor = torch.tensor(y_np).to(self.device)
         
