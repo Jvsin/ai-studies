@@ -53,7 +53,7 @@ class MyAgent:
         self.action_space = [0, 1, 2, 3, 4]
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.path = "records/race_model.pth"
+        self.path = "records/race_model_dhq.pth"
 
         self.policy_net = DuelingDQN(input_dims, n_actions).to(self.device)
         self.target_net = DuelingDQN(input_dims, n_actions).to(self.device)
@@ -98,10 +98,8 @@ class MyAgent:
         next_states = torch.tensor(np.array(next_states), dtype=torch.float32).to(self.device)
         dones = torch.tensor(dones, dtype=torch.bool).unsqueeze(1).to(self.device)
 
-        # Obliczanie Q-values dla bieżących stanów
         q_values = self.policy_net(states).gather(1, actions)
 
-        # Obliczanie Target Q-values (Double DQN logic albo zwykły DQN)
         with torch.no_grad():
             next_q_values = self.target_net(next_states).max(1, keepdim=True)[0]
             next_q_values[dones] = 0.0

@@ -117,7 +117,6 @@ def train():
         if e % 10 == 0:
              print(f"Ep: {e} | Avg: {avg_score:.2f} | Best: {best_score:.2f} | Eps: {agent.epsilon:.2f}")
         
-        # Zapisywanie modelu
         if avg_score > best_score and e > 50:
             best_score = avg_score
             agent.save(best_score)

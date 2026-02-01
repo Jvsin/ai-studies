@@ -40,19 +40,16 @@ class TrainingCar(AbstractCar):
         target_ckpt = CHECKPOINTS[self.next_checkpoint_id]
         dist_to_ckpt = math.hypot(self.x - target_ckpt[0], self.y - target_ckpt[1])
         
-        # nagroda za zbliżanie się do checkpointu
         if dist_to_ckpt < 50:
             reward += 15
             self.next_checkpoint_id = (self.next_checkpoint_id + 1) % len(CHECKPOINTS)
         
-        # kara za brak ruchu
         if self.vel < 0.1:
             reward -= 0.1
 
         return reward, done
 
     def get_state(self, other_cars=[]):
-        # Raycasting
         rays, wall_dists = self.get_rays_and_distances(TRACK_BORDER_MASK)
         car_dists = self.get_distances_to_cars(other_cars)
         
@@ -64,13 +61,9 @@ def spawn_random_car(car_class, car_img):
     pos = CHECKPOINTS[idx]
     next_pos = CHECKPOINTS[idx + 1]
     
-    # Oblicz kąt, żeby auto patrzyło w stronę następnego punktu
     dx = next_pos[0] - pos[0]
     dy = next_pos[1] - pos[1]
-    angle = math.degrees(math.atan2(dy, dx)) + 90 # +90 bo w pygame 0 to góra/prawo zależnie od sprite'a
-    # Korekta kąta zależna od orientacji Twojego sprite'a (często -90 lub +90)
-    # W abstract_car: angle 0 to zazwyczaj góra. atan2 zwraca kąt matematyczny.
-    # Warto eksperymentalnie dobrać offset, tutaj zakładam standard.
+    angle = math.degrees(math.atan2(dy, dx)) + 90
     
     car = car_class(car_img, pos, -angle)
     return car
