@@ -67,7 +67,6 @@ def train():
                     next_state = car.get_state([])
                     scores[i] += reward
                     
-                    # memory
                     memory.append((states[i], actions[i], reward, next_state, done))
                     states[i] = next_state
                     
@@ -77,11 +76,11 @@ def train():
             if len(memory) > BATCH_SIZE:
                 mini_batch = random.sample(memory, BATCH_SIZE)
                 
-                batch_states = [m[0] for m in mini_batch]
-                batch_actions = [m[1] for m in mini_batch]
-                batch_rewards = [m[2] for m in mini_batch]
-                batch_next_states = [m[3] for m in mini_batch]
-                batch_is_done = [m[4] for m in mini_batch]
+                batch_states = [m[0] for m in mini_batch] # stan
+                batch_actions = [m[1] for m in mini_batch] # podjęta akcja
+                batch_rewards = [m[2] for m in mini_batch] # nagroda za ten ruch
+                batch_next_states = [m[3] for m in mini_batch] # następny stan po ruchu
+                batch_is_done = [m[4] for m in mini_batch] # flaga końca (czy zderzył się z bandą)
                 
                 current_qs = agent.predict_batch(batch_states) # przewidywania dla aktualnych stanów
                 next_qs = agent.predict_batch(batch_next_states) # przewidywania dla następnych 
@@ -90,13 +89,11 @@ def train():
                 y = current_qs.copy()
                 
                 for i in range(BATCH_SIZE):
-                    # wzor bellmana:
                     target = batch_rewards[i]
                     if not batch_is_done[i]:
                         target += GAMMA * np.max(next_qs[i])
                     
-                    # aktualizujemy tylko te akcje, którą wykonaliśmy
-                    y[i][batch_actions[i]] = target
+                    y[i][batch_actions[i]] = target # aktualizujemy tylko te akcje, którą wykonaliśmy
                 
                 agent.fit(X, y)
 
