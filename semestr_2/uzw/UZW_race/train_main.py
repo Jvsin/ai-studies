@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-from myAgent import MyAgent
+from semestr_2.uzw.UZW_race.myAgentDueling import MyAgent
 from training_env import TrainingCar, spawn_random_car
 from game import RED_CAR, WIDTH, HEIGHT, TRACK_BORDER_MASK
 

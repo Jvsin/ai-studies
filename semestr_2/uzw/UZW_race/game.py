@@ -1,25 +1,29 @@
+import os
 import pygame
 from abstract_car import AbstractCar
 from utils import scale_image
 from itertools import permutations
 import numpy as np
 
+# Use imgs directory next to this file so loading works from any working dir
+IMG_DIR = os.path.join(os.path.dirname(__file__), "imgs")
+
 #Based on https://github.com/techwithtim/Pygame-Car-Racer
 
-GRASS = scale_image(pygame.image.load("imgs/grass.jpg"), 2.5)
-TRACK = scale_image(pygame.image.load("imgs/track.png"), 0.9)
+GRASS = scale_image(pygame.image.load(os.path.join(IMG_DIR, "grass.jpg")), 2.5)
+TRACK = scale_image(pygame.image.load(os.path.join(IMG_DIR, "track.png")), 0.9)
 
-TRACK_BORDER = scale_image(pygame.image.load("imgs/track-border.png"), 0.9)
+TRACK_BORDER = scale_image(pygame.image.load(os.path.join(IMG_DIR, "track-border.png")), 0.9)
 TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 
-FINISH = pygame.image.load("imgs/finish.png")
+FINISH = pygame.image.load(os.path.join(IMG_DIR, "finish.png"))
 FINISH_MASK = pygame.mask.from_surface(FINISH)
 FINISH_POSITION = (130, 250)
 
-RED_CAR = scale_image(pygame.image.load("imgs/red-car.png"), 0.35)
-GREEN_CAR = scale_image(pygame.image.load("imgs/green-car.png"), 0.35)
-PURPLE_CAR = scale_image(pygame.image.load("imgs/purple-car.png"), 0.35)
-GRAY_CAR = scale_image(pygame.image.load("imgs/grey-car.png"), 0.35)
+RED_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "red-car.png")), 0.35)
+GREEN_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "green-car.png")), 0.35)
+PURPLE_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "purple-car.png")), 0.35)
+GRAY_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "grey-car.png")), 0.35)
 
 
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
@@ -205,7 +209,29 @@ class PlayerCar(AbstractCar):
 class PlayerCar2(AbstractCar):
     def __init__(self, name):
         super().__init__(name)
-        from myAgent import MyAgent 
+        from myAgent import MyAgent
+        self.agent = MyAgent()
+        self.agent.load()
+
+    def choose_action(self, state):
+        full_state = [
+            state[0],
+            state[1],
+            state[2],
+            CHECKPOINTS,
+            self.vel
+        ]
+        
+        q_values = self.agent.predict(full_state)
+        action_idx = np.argmax(q_values)
+        
+        actions = ["forward", "backward", "left", "right", "stop"]
+        return actions[action_idx]
+
+class PlayerCarDueling(AbstractCar):
+    def __init__(self, name):
+        super().__init__(name)
+        from myAgentDueling import MyAgent 
         self.agent = MyAgent(input_dims=17, n_actions=5) 
         self.agent.load()
 
@@ -223,8 +249,9 @@ def main():
     final_results = dict()
 
     #initializing players - it is possible to play up to 4 players together
-    players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P3")]
-    # players = [PlayerCar2("P2"), PlayerCar2("P2"), PlayerCar2("P3")]
+    # players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P4")]
+    players = [PlayerCar2("Gracz")]
+    # players = [PlayerCarDueling("Gracz")]
 
     for p in players:
         final_results[p.get_name()] = 0
