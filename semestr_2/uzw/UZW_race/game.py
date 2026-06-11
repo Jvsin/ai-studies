@@ -63,14 +63,22 @@ def draw_checkpoints(win, checkpoints):
 
 
 class Game:
-    def __init__(self, width, height, fps=60):
-        self.win = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Racing Game")
+    def __init__(self, width, height, fps=60, headless=False, show_rays=True):
+        """If headless=True, render to an off-screen Surface and do not open a window.
+        If show_rays=False, do not draw sensor rays on cars."""
+        self.headless = headless
+        self.show_rays = show_rays
+        if not self.headless:
+            self.win = pygame.display.set_mode((width, height))
+            pygame.display.set_caption("Racing Game")
+        else:
+            self.win = pygame.Surface((width, height))
+
         self.clock = pygame.time.Clock()
         self.fps = fps
         self.cars = []  # List to hold car objects
         self.images = [(GRASS, (0, 0)), (TRACK, (0, 0)),
-          (FINISH, FINISH_POSITION), (TRACK_BORDER, (0, 0))]
+            (FINISH, FINISH_POSITION), (TRACK_BORDER, (0, 0))]
         self.running = True
 
     def add_car(self, car):
@@ -101,10 +109,12 @@ class Game:
 
         for car in self.cars:
             car.draw(self.win)
-            car.draw_rays(self.win, TRACK_BORDER_MASK)
+            if self.show_rays:
+                car.draw_rays(self.win, TRACK_BORDER_MASK)
 
-
-        pygame.display.update()
+        # Update display only when not headless
+        if not self.headless:
+            pygame.display.update()
 
     def check_collisions(self):
 
