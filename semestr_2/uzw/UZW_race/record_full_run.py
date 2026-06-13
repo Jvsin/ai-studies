@@ -7,16 +7,13 @@ import pygame
 
 from game import Game, PlayerCar2, WIDTH, HEIGHT, FPS, CHECKPOINTS, TRACK_BORDER_MASK
 
-
 OUT_ROOT = os.path.join(os.path.dirname(__file__), "expert", "full_runs")
 os.makedirs(OUT_ROOT, exist_ok=True)
-
 
 def save_surface(surface, path):
     pygame.image.save(surface, path)
 
-
-def record_full_run(max_steps=100000):
+def record_full_run(max_steps=25000): # Ustawiono twardy limit na ok. 5 okrążeń (25k kroków to ~7 minut jazdy)
     pygame.init()
 
     # run headless and without sensor trackers to speed up recording
@@ -46,6 +43,8 @@ def record_full_run(max_steps=100000):
 
     step = 0
     running = True
+
+    print(f"Rozpoczynam ciągłe nagrywanie do osiągnięcia {max_steps} kroków...")
 
     with open(meta_path, "w", encoding="utf-8") as meta_file:
         while running and step < max_steps and len(game.cars) > 0:
@@ -80,9 +79,9 @@ def record_full_run(max_steps=100000):
                 # perform action
                 car.perform_action(action)
 
-                # collisions/finish
-                game.check_collisions()
-                finished = game.check_finish_line()
+                # WYŁĄCZONE: Sprawdzanie kolizji niszczących auto i linii mety, auto jedzie bez przerwy
+                # game.check_collisions()
+                # game.check_finish_line()
 
                 # draw after action
                 game.draw()
@@ -98,7 +97,6 @@ def record_full_run(max_steps=100000):
                     reward = -0.1
 
                 # store metadata: indices of frames used for state (last 4) and next (next 4)
-                # current frames deque has last up to 4 frames including curr_frame
                 state_frame_indices = list(range(max(0, step - len(frames) + 1), step + 1))
 
                 # take a snapshot for next frame (game.win already updated)
@@ -109,8 +107,6 @@ def record_full_run(max_steps=100000):
 
                 # append next frame to deque for consistency
                 frames.append(next_frame.copy())
-
-                next_frame_indices = list(range(step+1 - len(frames) + 1 + 1, step+2))
 
                 meta = {
                     "step": step,
@@ -128,14 +124,12 @@ def record_full_run(max_steps=100000):
                 meta_file.flush()
 
                 step += 1
-
-                if finished:
-                    running = False
-                    break
+                
+                if step % 1000 == 0:
+                    print(f"Postęp nagrywania: {step}/{max_steps} kroków...")
 
     pygame.quit()
-    print(f"Saved full run to: {run_dir}, frames: {step+1}")
-
+    print(f"Saved full run to: {run_dir}, total frames: {step}")
 
 if __name__ == "__main__":
     record_full_run()

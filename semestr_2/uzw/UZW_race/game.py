@@ -4,6 +4,7 @@ from abstract_car import AbstractCar
 from utils import scale_image
 from itertools import permutations
 import numpy as np
+from pathlib import Path
 
 # Use imgs directory next to this file so loading works from any working dir
 IMG_DIR = os.path.join(os.path.dirname(__file__), "imgs")
@@ -100,6 +101,8 @@ class Game:
             car.set_position((150, 160))
 
         car.reset()
+        if hasattr(car, "set_game_context"):
+            car.set_game_context(self)
         self.cars.append(car)
 
     def draw(self):
@@ -158,6 +161,8 @@ class Game:
     def run(self):
         """Main game loop."""
         who_finished_first = []
+        # Build the initial rendered frame so image-based agents can act on step 1.
+        self.draw()
         while self.running and len(self.cars) != 0:
             self.clock.tick(self.fps)
             # draw_checkpoints(self.win, CHECKPOINTS)
@@ -238,6 +243,43 @@ class PlayerCar2(AbstractCar):
         actions = ["forward", "backward", "left", "right", "stop"]
         return actions[action_idx]
 
+
+class PlayerCarImageModel(AbstractCar):
+    def __init__(self, name, model_path=None):
+        super().__init__(name)
+        from myImageAgent import ImageImitationAgent, ACTION_NAMES, NUM_FRAMES
+        from collections import deque
+
+        default_model_path = Path(__file__).resolve().parent / "records" / "image_imitation_model.pth"
+        self.model_path = Path(model_path) if model_path is not None else default_model_path
+        self.actions = ACTION_NAMES
+        self.num_frames = NUM_FRAMES
+        self.game = None
+        self.agent = ImageImitationAgent(model_path=self.model_path)
+        # Bufor ostatnich NUM_FRAMES klatek gry (przechowujemy kopie surface'ów)
+        self._frame_buffer = deque(maxlen=NUM_FRAMES)
+
+    def set_game_context(self, game):
+        self.game = game
+        # Wypełnij bufor aktualną klatką, żeby mieć pełne 4 klatki od razu
+        current = game.win.copy()
+        for _ in range(self.num_frames):
+            self._frame_buffer.append(current)
+
+    def choose_action(self, state):
+        if self.game is None:
+            return "stop"
+
+        # Zaktualizuj bufor bieżącą klatką
+        self._frame_buffer.append(self.game.win.copy())
+
+        center_hint = (int(self.x), int(self.y))
+        action_idx = self.agent.predict_action_from_surfaces(
+            list(self._frame_buffer), center=center_hint
+        )
+        action_idx = int(np.clip(action_idx, 0, len(self.actions) - 1))
+        return self.actions[action_idx]
+
 class PlayerCarDueling(AbstractCar):
     def __init__(self, name):
         super().__init__(name)
@@ -260,7 +302,8 @@ def main():
 
     #initializing players - it is possible to play up to 4 players together
     # players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P4")]
-    players = [PlayerCar2("Gracz")]
+    players = [PlayerCarImageModel("Gracz")]
+    # players = [PlayerCar2("Gracz")]
     # players = [PlayerCarDueling("Gracz")]
 
     for p in players:
