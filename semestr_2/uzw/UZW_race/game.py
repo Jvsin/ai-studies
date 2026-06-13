@@ -5,6 +5,30 @@ from utils import scale_image
 from itertools import permutations
 import numpy as np
 from pathlib import Path
+import cv2
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from collections import deque
+
+class ImitationCNN(nn.Module):
+    def __init__(self, in_channels: int = 4, n_actions: int = 5):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, 16, kernel_size=3, stride=2, padding=0)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=0)
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=0)
+        self.flatten = nn.Flatten()
+        
+        self.fc1 = nn.Linear(64 * 17 * 17, 256) 
+        self.q_out = nn.Linear(256, n_actions)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = self.flatten(x)
+        x = F.relu(self.fc1(x))
+        return self.q_out(x)
 
 # Use imgs directory next to this file so loading works from any working dir
 IMG_DIR = os.path.join(os.path.dirname(__file__), "imgs")
@@ -64,7 +88,7 @@ def draw_checkpoints(win, checkpoints):
 
 
 class Game:
-    def __init__(self, width, height, fps=60, headless=False, show_rays=True):
+    def __init__(self, width, height, fps=60, headless=False, show_rays=False):
         """If headless=True, render to an off-screen Surface and do not open a window.
         If show_rays=False, do not draw sensor rays on cars."""
         self.headless = headless
@@ -244,40 +268,87 @@ class PlayerCar2(AbstractCar):
         return actions[action_idx]
 
 
-class PlayerCarImageModel(AbstractCar):
-    def __init__(self, name, model_path=None):
+class PlayerCarImageImitation(AbstractCar):
+    def __init__(self, name, model_path="records/best_imitation_model.pth"):
         super().__init__(name)
-        from myImageAgent import ImageImitationAgent, ACTION_NAMES, NUM_FRAMES
-        from collections import deque
-
-        default_model_path = Path(__file__).resolve().parent / "records" / "image_imitation_model.pth"
-        self.model_path = Path(model_path) if model_path is not None else default_model_path
-        self.actions = ACTION_NAMES
-        self.num_frames = NUM_FRAMES
+        
+        # Wybór urządzenia (GPU jeśli dostępne)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # Inicjalizacja modelu i załadowanie wag
+        self.model = ImitationCNN(in_channels=4, n_actions=5).to(self.device)
+        if os.path.exists(model_path):
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
+            print(f"Załadowano wyuczony model wizualny z: {model_path}")
+        else:
+            print(f"Ostrzeżenie: Nie znaleziono pliku modelu {model_path}! Model działa na losowych wagach.")
+            
+        self.model.eval()
+        
+        self.actions = ["forward", "backward", "left", "right", "stop"]
         self.game = None
-        self.agent = ImageImitationAgent(model_path=self.model_path)
-        # Bufor ostatnich NUM_FRAMES klatek gry (przechowujemy kopie surface'ów)
-        self._frame_buffer = deque(maxlen=NUM_FRAMES)
+        
+        # Historia na 4 klatki stanu gry
+        self._frame_buffer = deque(maxlen=4)
 
     def set_game_context(self, game):
+        """Metoda wywoływana automatycznie przy add_car w celu uzyskania dostępu do okna gry"""
         self.game = game
-        # Wypełnij bufor aktualną klatką, żeby mieć pełne 4 klatki od razu
-        current = game.win.copy()
-        for _ in range(self.num_frames):
-            self._frame_buffer.append(current)
+        
+        # Budujemy początkowy kadr, żeby zapełnić historię bufora na starcie
+        self.game.draw()
+        initial_cam = self._get_local_view()
+        initial_processed = self._preprocess(initial_cam)
+        for _ in range(4):
+            self._frame_buffer.append(initial_processed)
+
+    def _get_local_view(self):
+        """Wycina lokalny widok wokół auta (150x150)"""
+        camera_size = 150
+        camera = pygame.Surface((camera_size, camera_size))
+        camera.fill((0, 0, 0))
+        
+        car_center_x = self.x + (self.img.get_width() / 2)
+        car_center_y = self.y + (self.img.get_height() / 2)
+        
+        offset_x = (camera_size / 2) - car_center_x
+        offset_y = (camera_size / 2) - car_center_y
+        
+        camera.blit(self.game.win, (offset_x, offset_y))
+        return camera
+
+    def _preprocess(self, surface):
+        """Konwertuje klatkę PyGame do znormalizowanej macierzy szarości (150, 150, 1)"""
+        rgb_frame = pygame.surfarray.array3d(surface).transpose(1, 0, 2)
+        gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
+        gray_expanded = np.expand_dims(gray, axis=-1)
+        return gray_expanded.astype(np.float32) / 255.0
 
     def choose_action(self, state):
         if self.game is None:
             return "stop"
 
-        # Zaktualizuj bufor bieżącą klatką
-        self._frame_buffer.append(self.game.win.copy())
+        # 1. Pobierz aktualny widok z kamery i dodaj do bufora historii
+        current_cam = self._get_local_view()
+        processed_frame = self._preprocess(current_cam)
+        self._frame_buffer.append(processed_frame)
 
-        center_hint = (int(self.x), int(self.y))
-        action_idx = self.agent.predict_action_from_surfaces(
-            list(self._frame_buffer), center=center_hint
-        )
-        action_idx = int(np.clip(action_idx, 0, len(self.actions) - 1))
+        # 2. Przygotuj tensor wejściowy do sieci
+        # Składamy bufor do kształtu (4, 150, 150, 1)
+        stacked = np.stack(self._frame_buffer, axis=0)
+        
+        # Przekształcamy na tensor i usuwamy ostatni wymiar kanału -> (4, 150, 150)
+        state_tensor = torch.from_numpy(stacked).squeeze(-1)
+        
+        # Dodajemy wymiar batcha -> (1, 4, 150, 150) i wysyłamy na GPU/CPU
+        state_tensor = state_tensor.unsqueeze(0).to(self.device)
+
+        # 3. Wykonaj predykcję logitów akcji
+        with torch.no_grad():
+            outputs = self.model(state_tensor)
+            action_idx = int(outputs.argmax(dim=1).item())
+
+        # 4. Zwrot wybranej nazwy akcji
         return self.actions[action_idx]
 
 class PlayerCarDueling(AbstractCar):
@@ -302,9 +373,8 @@ def main():
 
     #initializing players - it is possible to play up to 4 players together
     # players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P4")]
-    players = [PlayerCarImageModel("Gracz")]
     # players = [PlayerCar2("Gracz")]
-    # players = [PlayerCarDueling("Gracz")]
+    players = [PlayerCarImageImitation("ModelAI")]
 
     for p in players:
         final_results[p.get_name()] = 0
