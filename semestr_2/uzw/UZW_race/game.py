@@ -301,13 +301,10 @@ class PlayerCarImageImitation(AbstractCar):
         camera_size = 150
         camera = pygame.Surface((camera_size, camera_size))
         camera.fill((0, 0, 0))
-        
         car_center_x = self.x + (self.img.get_width() / 2)
         car_center_y = self.y + (self.img.get_height() / 2)
-        
         offset_x = (camera_size / 2) - car_center_x
         offset_y = (camera_size / 2) - car_center_y
-        
         camera.blit(self.game.win, (offset_x, offset_y))
         return camera
 
