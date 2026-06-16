@@ -1,0 +1,7 @@
+D:\projekty-bazy\GeoPoint\GeoPoint\obj\Debug\GeoPoint.csproj.AssemblyReference.cache
+D:\projekty-bazy\GeoPoint\GeoPoint\obj\Debug\GeoPoint.csproj.CoreCompileInputs.cache
+D:\projekty-bazy\GeoPoint\GeoPoint\bin\Debug\GeoPoint.dll.config
+D:\projekty-bazy\GeoPoint\GeoPoint\bin\Debug\GeoPoint.dll
+D:\projekty-bazy\GeoPoint\GeoPoint\bin\Debug\GeoPoint.pdb
+D:\projekty-bazy\GeoPoint\GeoPoint\obj\Debug\GeoPoint.dll
+D:\projekty-bazy\GeoPoint\GeoPoint\obj\Debug\GeoPoint.pdb

@@ -1,0 +1,13 @@
+D:\projekty-bazy\n_point\n_point\obj\Debug\n_point.csproj.AssemblyReference.cache
+D:\projekty-bazy\n_point\n_point\obj\Debug\n_point.csproj.CoreCompileInputs.cache
+D:\projekty-bazy\n_point\n_point\bin\Debug\n_point.dll.config
+D:\projekty-bazy\n_point\n_point\bin\Debug\n_point.dll
+D:\projekty-bazy\n_point\n_point\bin\Debug\n_point.pdb
+D:\projekty-bazy\n_point\n_point\bin\Debug\Microsoft.SqlServer.Types.dll
+D:\projekty-bazy\n_point\n_point\obj\Debug\n_point.csproj.Up2Date
+D:\projekty-bazy\n_point\n_point\obj\Debug\n_point.dll
+D:\projekty-bazy\n_point\n_point\obj\Debug\n_point.pdb
+D:\projekty-bazy\n_point\n_point\bin\Debug\SqlServerTypes\x64\msvcr120.dll
+D:\projekty-bazy\n_point\n_point\bin\Debug\SqlServerTypes\x64\SqlServerSpatial140.dll
+D:\projekty-bazy\n_point\n_point\bin\Debug\SqlServerTypes\x86\msvcr120.dll
+D:\projekty-bazy\n_point\n_point\bin\Debug\SqlServerTypes\x86\SqlServerSpatial140.dll

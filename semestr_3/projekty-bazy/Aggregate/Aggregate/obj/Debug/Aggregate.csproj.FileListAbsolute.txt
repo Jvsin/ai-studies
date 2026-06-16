@@ -1,0 +1,6 @@
+D:\Aggregate\Aggregate\bin\Debug\Aggregate.dll
+D:\Aggregate\Aggregate\bin\Debug\Aggregate.pdb
+D:\Aggregate\Aggregate\obj\Debug\Aggregate.csproj.AssemblyReference.cache
+D:\Aggregate\Aggregate\obj\Debug\Aggregate.csproj.CoreCompileInputs.cache
+D:\Aggregate\Aggregate\obj\Debug\Aggregate.dll
+D:\Aggregate\Aggregate\obj\Debug\Aggregate.pdb

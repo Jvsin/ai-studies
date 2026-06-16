@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Aggregate\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{10510D83-131E-4492-829D-6E617BFEFFB5}|Aggregate\\Aggregate.csproj|d:\\aggregate\\aggregate\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{10510D83-131E-4492-829D-6E617BFEFFB5}|Aggregate\\Aggregate.csproj|solutionrelative:aggregate\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "D:\\Aggregate\\Aggregate\\Class1.cs",
+              "RelativeDocumentMoniker": "Aggregate\\Class1.cs",
+              "ToolTip": "D:\\Aggregate\\Aggregate\\Class1.cs",
+              "RelativeToolTip": "Aggregate\\Class1.cs",
+              "ViewState": "AgIAABUAAAAAAAAAAAAYwCoAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-07T14:01:29.093Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

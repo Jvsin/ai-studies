@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\projekty-bazy\\punkt2\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{FC6A6164-2B00-4728-9AD0-1D68EE247416}|punkt2\\punkt2.csproj|d:\\projekty-bazy\\punkt2\\punkt2\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FC6A6164-2B00-4728-9AD0-1D68EE247416}|punkt2\\punkt2.csproj|solutionrelative:punkt2\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\projekty-bazy\\punkt2\\punkt2\\Program.cs",
+              "RelativeDocumentMoniker": "punkt2\\Program.cs",
+              "ToolTip": "D:\\projekty-bazy\\punkt2\\punkt2\\Program.cs",
+              "RelativeToolTip": "punkt2\\Program.cs",
+              "ViewState": "AgIAAOwAAAAAAAAAAAAAwP8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-28T12:26:27.736Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

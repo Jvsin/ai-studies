@@ -1,0 +1,2 @@
+D:\projekty-bazy\punkt2\punkt2\obj\Debug\punkt2.csproj.AssemblyReference.cache
+D:\projekty-bazy\punkt2\punkt2\obj\Debug\punkt2.csproj.CoreCompileInputs.cache

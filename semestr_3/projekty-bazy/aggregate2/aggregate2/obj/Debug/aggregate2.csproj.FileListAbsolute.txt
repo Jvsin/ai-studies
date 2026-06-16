@@ -1,0 +1,6 @@
+D:\aggregate2\aggregate2\bin\Debug\aggregate2.dll
+D:\aggregate2\aggregate2\bin\Debug\aggregate2.pdb
+D:\aggregate2\aggregate2\obj\Debug\aggregate2.csproj.AssemblyReference.cache
+D:\aggregate2\aggregate2\obj\Debug\aggregate2.csproj.CoreCompileInputs.cache
+D:\aggregate2\aggregate2\obj\Debug\aggregate2.dll
+D:\aggregate2\aggregate2\obj\Debug\aggregate2.pdb
