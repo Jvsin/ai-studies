@@ -14,7 +14,7 @@ os.makedirs(OUT_ROOT, exist_ok=True)
 ACTION_MAP = {"forward": 0, "backward": 1, "left": 2, "right": 3, "stop": 4}
 
 
-def get_local_camera_view(main_surface, car, camera_size=150):
+def get_frame(main_surface, car, camera_size=150):
     camera = pygame.Surface((camera_size, camera_size))
     camera.fill((0, 0, 0)) 
     car_center_x = car.x + (car.img.get_width() / 2)
@@ -53,7 +53,7 @@ def collect_dataset():
         frame_buffer = deque(maxlen=stack_size)
         
         game.draw()
-        initial_cam = get_local_camera_view(game.win, expert_car, camera_size=150)
+        initial_cam = get_frame(game.win, expert_car, camera_size=150)
         initial_frame = preprocess_frame(initial_cam)
         for _ in range(stack_size):
             frame_buffer.append(initial_frame)
@@ -72,7 +72,7 @@ def collect_dataset():
                     
             game.draw()
             
-            cam_surface = get_local_camera_view(game.win, expert_car, camera_size=150)
+            cam_surface = get_frame(game.win, expert_car, camera_size=150)
             processed_frame = preprocess_frame(cam_surface)
             frame_buffer.append(processed_frame)
             
