@@ -1,25 +1,54 @@
+import os
 import pygame
 from abstract_car import AbstractCar
 from utils import scale_image
 from itertools import permutations
 import numpy as np
+from pathlib import Path
+import cv2
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from collections import deque
+
+class ImitationCNN(nn.Module):
+    def __init__(self, in_channels: int = 4, n_actions: int = 5):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, 16, kernel_size=3, stride=2, padding=0)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=0)
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=0)
+        self.flatten = nn.Flatten()
+        
+        self.fc1 = nn.Linear(64 * 17 * 17, 256) 
+        self.q_out = nn.Linear(256, n_actions)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = self.flatten(x)
+        x = F.relu(self.fc1(x))
+        return self.q_out(x)
+
+# Use imgs directory next to this file so loading works from any working dir
+IMG_DIR = os.path.join(os.path.dirname(__file__), "imgs")
 
 #Based on https://github.com/techwithtim/Pygame-Car-Racer
 
-GRASS = scale_image(pygame.image.load("imgs/grass.jpg"), 2.5)
-TRACK = scale_image(pygame.image.load("imgs/track.png"), 0.9)
+GRASS = scale_image(pygame.image.load(os.path.join(IMG_DIR, "grass.jpg")), 2.5)
+TRACK = scale_image(pygame.image.load(os.path.join(IMG_DIR, "track.png")), 0.9)
 
-TRACK_BORDER = scale_image(pygame.image.load("imgs/track-border.png"), 0.9)
+TRACK_BORDER = scale_image(pygame.image.load(os.path.join(IMG_DIR, "track-border.png")), 0.9)
 TRACK_BORDER_MASK = pygame.mask.from_surface(TRACK_BORDER)
 
-FINISH = pygame.image.load("imgs/finish.png")
+FINISH = pygame.image.load(os.path.join(IMG_DIR, "finish.png"))
 FINISH_MASK = pygame.mask.from_surface(FINISH)
 FINISH_POSITION = (130, 250)
 
-RED_CAR = scale_image(pygame.image.load("imgs/red-car.png"), 0.35)
-GREEN_CAR = scale_image(pygame.image.load("imgs/green-car.png"), 0.35)
-PURPLE_CAR = scale_image(pygame.image.load("imgs/purple-car.png"), 0.35)
-GRAY_CAR = scale_image(pygame.image.load("imgs/grey-car.png"), 0.35)
+RED_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "red-car.png")), 0.35)
+GREEN_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "green-car.png")), 0.35)
+PURPLE_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "purple-car.png")), 0.35)
+GRAY_CAR = scale_image(pygame.image.load(os.path.join(IMG_DIR, "grey-car.png")), 0.35)
 
 
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
@@ -59,14 +88,22 @@ def draw_checkpoints(win, checkpoints):
 
 
 class Game:
-    def __init__(self, width, height, fps=60):
-        self.win = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Racing Game")
+    def __init__(self, width, height, fps=60, headless=False, show_rays=False):
+        """If headless=True, render to an off-screen Surface and do not open a window.
+        If show_rays=False, do not draw sensor rays on cars."""
+        self.headless = headless
+        self.show_rays = show_rays
+        if not self.headless:
+            self.win = pygame.display.set_mode((width, height))
+            pygame.display.set_caption("Racing Game")
+        else:
+            self.win = pygame.Surface((width, height))
+
         self.clock = pygame.time.Clock()
         self.fps = fps
         self.cars = []  # List to hold car objects
         self.images = [(GRASS, (0, 0)), (TRACK, (0, 0)),
-          (FINISH, FINISH_POSITION), (TRACK_BORDER, (0, 0))]
+            (FINISH, FINISH_POSITION), (TRACK_BORDER, (0, 0))]
         self.running = True
 
     def add_car(self, car):
@@ -88,6 +125,8 @@ class Game:
             car.set_position((150, 160))
 
         car.reset()
+        if hasattr(car, "set_game_context"):
+            car.set_game_context(self)
         self.cars.append(car)
 
     def draw(self):
@@ -97,10 +136,12 @@ class Game:
 
         for car in self.cars:
             car.draw(self.win)
-            car.draw_rays(self.win, TRACK_BORDER_MASK)
+            if self.show_rays:
+                car.draw_rays(self.win, TRACK_BORDER_MASK)
 
-
-        pygame.display.update()
+        # Update display only when not headless
+        if not self.headless:
+            pygame.display.update()
 
     def check_collisions(self):
 
@@ -144,6 +185,8 @@ class Game:
     def run(self):
         """Main game loop."""
         who_finished_first = []
+        # Build the initial rendered frame so image-based agents can act on step 1.
+        self.draw()
         while self.running and len(self.cars) != 0:
             self.clock.tick(self.fps)
             # draw_checkpoints(self.win, CHECKPOINTS)
@@ -205,7 +248,7 @@ class PlayerCar(AbstractCar):
 class PlayerCar2(AbstractCar):
     def __init__(self, name):
         super().__init__(name)
-        from myAgent import MyAgent 
+        from myAgent import MyAgent
         self.agent = MyAgent()
         self.agent.load()
 
@@ -224,13 +267,81 @@ class PlayerCar2(AbstractCar):
         actions = ["forward", "backward", "left", "right", "stop"]
         return actions[action_idx]
 
+
+class PlayerCarImageImitation(AbstractCar):
+    def __init__(self, name, model_path="records/best_imitation_model.pth"):
+        super().__init__(name)
+        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        self.model = ImitationCNN(in_channels=4, n_actions=5).to(self.device)
+        if os.path.exists(model_path):
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
+            print(f"Załadowano wyuczony model wizualny z: {model_path}")
+        else:
+            print(f"Brak znalezionego modelu w {model_path}")
+            
+        self.model.eval()
+        
+        self.actions = ["forward", "backward", "left", "right", "stop"]
+        self.game = None
+        
+        self._frame_buffer = deque(maxlen=4)
+
+    def set_game_context(self, game):
+        self.game = game
+        
+        self.game.draw()
+        initial_cam = self._get_local_view()
+        initial_processed = self._preprocess(initial_cam)
+        for _ in range(4):
+            self._frame_buffer.append(initial_processed)
+
+    def _get_local_view(self):
+        camera_size = 150
+        camera = pygame.Surface((camera_size, camera_size))
+        camera.fill((0, 0, 0))
+        car_center_x = self.x + (self.img.get_width() / 2)
+        car_center_y = self.y + (self.img.get_height() / 2)
+        offset_x = (camera_size / 2) - car_center_x
+        offset_y = (camera_size / 2) - car_center_y
+        camera.blit(self.game.win, (offset_x, offset_y))
+        return camera
+
+    def _preprocess(self, surface):
+        rgb_frame = pygame.surfarray.array3d(surface).transpose(1, 0, 2)
+        gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
+        gray_expanded = np.expand_dims(gray, axis=-1)
+        return gray_expanded.astype(np.float32) / 255.0
+
+    def choose_action(self, state):
+        if self.game is None:
+            return "stop"
+
+        current_cam = self._get_local_view()
+        processed_frame = self._preprocess(current_cam)
+        self._frame_buffer.append(processed_frame)
+
+        stacked = np.stack(self._frame_buffer, axis=0)
+        
+        state_tensor = torch.from_numpy(stacked).squeeze(-1)
+        state_tensor = state_tensor.unsqueeze(0).to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model(state_tensor)
+            action_idx = int(outputs.argmax(dim=1).item())
+
+        return self.actions[action_idx]
+
+
 def main():
 
     final_results = dict()
 
     #initializing players - it is possible to play up to 4 players together
-    players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P4")]
-    # players = [PlayerCar2("P2"), PlayerCar2("P2"), PlayerCar2("P3")]
+    # players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P4")]
+    # players = [PlayerCar2("Gracz")]
+    players = [PlayerCarImageImitation("ModelAI")]
 
     for p in players:
         final_results[p.get_name()] = 0
