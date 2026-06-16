@@ -206,14 +206,20 @@ class PlayerCar2(AbstractCar):
     def __init__(self, name):
         super().__init__(name)
         from myAgent import MyAgent 
-        self.agent = MyAgent(input_dims=17, n_actions=5) 
+        self.agent = MyAgent()
         self.agent.load()
 
     def choose_action(self, state):
+        full_state = [
+            state[0],
+            state[1],
+            state[2],
+            CHECKPOINTS,
+            self.vel
+        ]
         
-        full_state = [state[0], state[1], state[2], self.vel]
-        
-        action_idx = self.agent.choose_action(full_state, eval_mode=True)
+        q_values = self.agent.predict(full_state)
+        action_idx = np.argmax(q_values)
         
         actions = ["forward", "backward", "left", "right", "stop"]
         return actions[action_idx]
@@ -223,7 +229,7 @@ def main():
     final_results = dict()
 
     #initializing players - it is possible to play up to 4 players together
-    players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P3")]
+    players = [PlayerCar2("P1"), PlayerCar2("P2"), PlayerCar2("P3"), PlayerCar2("P4")]
     # players = [PlayerCar2("P2"), PlayerCar2("P2"), PlayerCar2("P3")]
 
     for p in players:
